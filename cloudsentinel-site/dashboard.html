@@ -1,0 +1,1853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CloudSentinel AI — Cloud Security Posture Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0a0f1d;
+  --bg-panel:#111a2c;
+  --bg-panel-alt:#0d1526;
+  --bg-raised:#182338;
+  --border:#1f2c44;
+  --border-bright:#2b3b58;
+  --blue:#4f7cff;
+  --blue-dim:#1c3a7a;
+  --blue-glow:rgba(79,124,255,0.14);
+  --text:#c3cbe0;
+  --text-bright:#f2f5fc;
+  --text-dim:#6b7794;
+  --red:#f0455c;
+  --red-dim:#3a1420;
+  --amber:#f5a623;
+  --amber-dim:#3a2a10;
+  --green:#35c780;
+  --green-dim:#0f2e22;
+  --purple:#9b6ef3;
+  --purple-dim:#2a1f4a;
+  --cyan:#38bdf8;
+  --sans:'Inter', sans-serif;
+  --mono:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:13.5px;
+  line-height:1.5;
+  min-height:100vh;
+}
+::selection{background:var(--blue); color:#fff;}
+::-webkit-scrollbar{width:8px; height:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border-bright); border-radius:4px;}
+svg.icon{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
+
+/* ===== SHELL ===== */
+.shell{display:flex; min-height:100vh;}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:236px; flex-shrink:0; background:var(--bg-panel-alt); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; padding:18px 12px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.brand{display:flex; align-items:center; gap:10px; padding:4px 8px 20px;}
+.brand-mark{
+  width:36px; height:36px; border-radius:9px; flex-shrink:0;
+  background:linear-gradient(135deg, var(--blue), #2a4fd6);
+  display:flex; align-items:center; justify-content:center; color:#fff;
+}
+.brand-text{font-weight:800; font-size:15px; color:var(--text-bright); letter-spacing:-0.2px;}
+.brand-sub{font-size:10.5px; color:var(--blue); font-weight:600; letter-spacing:0.4px;}
+.nav-item{
+  display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:8px; cursor:pointer;
+  color:var(--text-dim); font-size:12.8px; font-weight:500; margin-bottom:2px; position:relative;
+}
+.nav-item:hover{background:var(--bg-raised); color:var(--text);}
+.nav-item.active{background:var(--blue); color:#fff; box-shadow:0 4px 14px rgba(79,124,255,0.35);}
+.nav-item.active svg.icon{stroke:#fff;}
+.nav-badge{
+  margin-left:auto; font-size:9px; font-weight:800; background:linear-gradient(135deg,var(--purple),var(--blue));
+  color:#fff; padding:2px 6px; border-radius:5px; letter-spacing:0.4px;
+}
+.nav-count{margin-left:auto; font-size:10px; background:var(--red-dim); color:var(--red); padding:1px 6px; border-radius:9px; font-weight:700;}
+.nav-item.active .nav-count{background:rgba(255,255,255,0.25); color:#fff;}
+.env-box{
+  margin-top:auto; background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; padding:14px;
+}
+.env-title{font-size:11px; font-weight:700; color:var(--text-bright); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;}
+.env-row{display:flex; align-items:center; justify-content:space-between; padding:5px 0; font-size:11.5px; color:var(--text-dim);}
+.env-row b{color:var(--text-bright); font-weight:700;}
+.env-scan{display:flex; align-items:center; gap:6px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-size:10.5px; color:var(--text-dim);}
+
+/* ===== TOP BAR ===== */
+.content{flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; padding:16px 26px;
+  border-bottom:1px solid var(--border); background:var(--bg);
+  position:sticky; top:0; z-index:5;
+}
+.topbar-left{display:flex; align-items:center; gap:16px;}
+.hamburger{color:var(--text-dim); cursor:pointer;}
+.page-title{font-size:19px; font-weight:800; color:var(--text-bright); letter-spacing:-0.3px;}
+.page-desc{font-size:11.5px; color:var(--text-dim); margin-top:1px;}
+.topbar-right{display:flex; align-items:center; gap:10px;}
+.cloud-badge{
+  display:flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:8px;
+  font-size:11.5px; font-weight:600; color:var(--text);
+}
+.icon-btn{
+  width:34px; height:34px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center;
+  justify-content:center; color:var(--text-dim); cursor:pointer; position:relative;
+}
+.icon-btn:hover{border-color:var(--border-bright); color:var(--text);}
+.date-select{
+  padding:7px 12px; border:1px solid var(--border); border-radius:8px; font-size:11.5px; color:var(--text);
+  background:var(--bg-panel); display:flex; align-items:center; gap:6px;
+}
+.avatar{width:34px; height:34px; border-radius:50%; background:var(--blue-dim); display:flex; align-items:center; justify-content:center; color:var(--blue); border:1px solid var(--border-bright);}
+
+/* ===== MAIN ===== */
+.main{flex:1; padding:22px 26px 40px; overflow-x:hidden;}
+.view{display:none;}
+.view.active{display:block;}
+
+/* ===== DASHBOARD GRID ===== */
+.dash-grid{display:grid; grid-template-columns:1fr 336px; gap:16px; align-items:start;}
+.dash-left{display:flex; flex-direction:column; gap:16px; min-width:0;}
+.dash-right{display:flex; flex-direction:column; gap:16px;}
+
+.metrics-row{display:grid; grid-template-columns:repeat(5,1fr); gap:14px;}
+.row3{display:grid; grid-template-columns:1.1fr 1.3fr 1.4fr; gap:14px;}
+.row-resources{display:grid; grid-template-columns:1fr 1fr 1.3fr; gap:14px;}
+
+/* ===== CARDS ===== */
+.card{background:var(--bg-panel); border:1px solid var(--border); border-radius:14px; padding:16px 18px;}
+.card-title{
+  font-size:12.5px; font-weight:700; color:var(--text-bright); margin-bottom:12px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.card-title .link-btn{font-size:11px; font-weight:600;}
+
+.metric-card{display:flex; flex-direction:column; gap:2px;}
+.metric-label{font-size:11.5px; color:var(--text-dim); font-weight:600;}
+.metric-row{display:flex; align-items:baseline; gap:8px; margin-top:6px;}
+.metric-val{font-size:26px; font-weight:800; color:var(--text-bright); letter-spacing:-0.5px;}
+.metric-val.red{color:var(--red);} .metric-val.amber{color:var(--amber);} .metric-val.green{color:var(--green);} .metric-val.blue{color:var(--blue);}
+.metric-trend{font-size:11px; font-weight:700; display:flex; align-items:center; gap:2px;}
+.metric-trend.up{color:var(--red);} .metric-trend.down{color:var(--green);}
+.metric-caption{font-size:11px; color:var(--text-dim); margin-top:4px;}
+.spark{height:34px; margin-top:8px;}
+
+.legend-list{margin-top:4px;}
+.legend-row{display:flex; align-items:center; gap:8px; padding:5px 0; font-size:11.8px;}
+.legend-swatch{width:9px; height:9px; border-radius:3px; flex-shrink:0;}
+.legend-row .lbl{color:var(--text); flex:1;}
+.legend-row .cnt{font-weight:700; color:var(--text-bright);}
+.legend-row .pct{color:var(--text-dim); font-size:10.5px; width:38px; text-align:right;}
+
+.misconfig-row{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px;}
+.misconfig-row:last-child{border-bottom:none;}
+.misconfig-icon{
+  width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.misconfig-row .lbl{flex:1; color:var(--text);}
+.misconfig-count{font-weight:800; color:var(--text-bright); font-size:12.5px;}
+
+.activity-row{display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px;}
+.activity-row:last-child{border-bottom:none;}
+.activity-icon{width:24px; height:24px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;}
+.activity-title{color:var(--text-bright); font-weight:600;}
+.activity-sub{color:var(--text-dim); font-size:11px; margin-top:1px;}
+.activity-time{color:var(--text-dim); font-size:10.5px; white-space:nowrap; margin-left:auto;}
+
+.alert-card{display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);}
+.alert-card:last-child{border-bottom:none;}
+.alert-icon{width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.alert-title{font-size:12px; font-weight:700; color:var(--text-bright);}
+.alert-sub{font-size:11px; color:var(--text-dim); margin-top:2px;}
+.alert-time{font-size:10px; color:var(--text-dim); margin-top:3px;}
+.alert-badge{margin-left:auto; align-self:flex-start;}
+
+.ai-insight-card{
+  border-radius:14px; padding:18px; color:#fff; position:relative; overflow:hidden;
+  background:linear-gradient(150deg, #4634b0 0%, #3555d6 55%, #2447c9 100%);
+  border:1px solid rgba(255,255,255,0.08);
+}
+.ai-insight-card::before{
+  content:""; position:absolute; top:-40px; right:-40px; width:140px; height:140px; border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,0.14), transparent 70%);
+}
+.ai-badge{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#e6ddff;}
+.ai-headline{font-size:14px; font-weight:700; margin-top:10px;}
+.ai-body{font-size:11.8px; color:#d7d9f5; margin-top:6px; line-height:1.5;}
+.ai-factor{font-size:11px; color:#c9cdf5; margin-top:10px;}
+.ai-factor b{color:#fff; display:block; font-size:12.5px; margin-top:2px;}
+.ai-btn{
+  margin-top:14px; background:#fff; color:#2447c9; border:none; padding:9px 14px; border-radius:8px;
+  font-size:12px; font-weight:700; cursor:pointer; width:100%;
+}
+
+.compliance-row{padding:9px 0;}
+.compliance-head{display:flex; justify-content:space-between; font-size:11.8px; margin-bottom:5px;}
+.compliance-head b{color:var(--text-bright); font-weight:700;}
+.compliance-head span.pct{color:var(--text-dim); font-weight:700;}
+.bar-track{height:6px; background:var(--bg-raised); border-radius:4px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:4px;}
+
+/* ===== IAM FLOW DIAGRAM ===== */
+.iam-flow{display:flex; align-items:center; gap:6px; overflow-x:auto; padding:6px 0 14px;}
+.flow-node{
+  border:1.5px solid; border-radius:10px; padding:10px 14px; min-width:140px; flex-shrink:0;
+  background:var(--bg-raised);
+}
+.flow-node .fn-icon{width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; margin-bottom:6px;}
+.flow-node .fn-label{font-size:10px; color:var(--text-dim); font-weight:600;}
+.flow-node .fn-val{font-size:12px; font-weight:700; color:var(--text-bright); margin-top:1px;}
+.flow-arrow{color:var(--text-dim); flex-shrink:0;}
+.risk-factor-row{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+.risk-factor{
+  border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; gap:9px; align-items:center;
+  background:var(--bg-panel-alt);
+}
+.risk-factor .rf-icon{width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.risk-factor .rf-label{font-size:11px; color:var(--text);}
+.risk-factor .rf-level{font-size:10.5px; font-weight:700; margin-top:1px;}
+
+/* ===== TABLES ===== */
+table{width:100%; border-collapse:collapse; font-size:12px;}
+th{
+  text-align:left; padding:9px 10px; color:var(--text-dim); font-weight:700;
+  border-bottom:1px solid var(--border); text-transform:uppercase; font-size:10px; letter-spacing:0.5px;
+  position:sticky; top:0; background:var(--bg-panel);
+}
+td{padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:middle;}
+tr:hover td{background:rgba(255,255,255,0.02);}
+.table-wrap{max-height:560px; overflow:auto; border:1px solid var(--border); border-radius:12px;}
+.table-wrap table{border:none;}
+
+.badge{display:inline-block; padding:2px 9px; border-radius:20px; font-size:10.5px; font-weight:700; letter-spacing:0.2px;}
+.badge.critical{background:var(--red-dim); color:var(--red);}
+.badge.high{background:var(--amber-dim); color:var(--amber);}
+.badge.medium{background:rgba(155,110,243,0.14); color:var(--purple);}
+.badge.low{background:rgba(56,189,248,0.14); color:var(--cyan);}
+.badge.pass{background:var(--green-dim); color:var(--green);}
+.badge.fail{background:var(--red-dim); color:var(--red);}
+.pill{display:inline-block; padding:2px 8px; border-radius:6px; background:var(--bg-raised); color:var(--text-dim); font-size:10.5px; border:1px solid var(--border);}
+.mono-sm{font-family:var(--mono); font-size:11.3px; color:var(--text-dim);}
+.link-btn{color:var(--blue); cursor:pointer; font-weight:600; text-decoration:none;}
+.link-btn:hover{color:var(--text-bright);}
+
+.btn{
+  background:var(--blue); border:none; color:#fff; padding:9px 16px; border-radius:8px; font-family:var(--sans);
+  font-size:12.5px; font-weight:700; cursor:pointer;
+}
+.btn:hover{background:#3d68e8;}
+.btn.ghost{background:transparent; border:1px solid var(--border); color:var(--text-dim);}
+.btn.ghost:hover{border-color:var(--border-bright); color:var(--text);}
+.btn:disabled{opacity:0.4; cursor:not-allowed;}
+
+textarea, input, select{
+  background:var(--bg-raised); border:1px solid var(--border); color:var(--text);
+  font-family:var(--mono); font-size:12px; padding:10px 12px; border-radius:8px; width:100%;
+}
+textarea:focus, input:focus, select:focus{outline:none; border-color:var(--blue-dim);}
+
+.detail-panel{border:1px solid var(--border); border-radius:12px; background:var(--bg-panel-alt); padding:18px; margin-top:14px; display:none;}
+.detail-panel.show{display:block;}
+.detail-grid{display:grid; grid-template-columns:1.3fr 1fr; gap:20px;}
+.kv{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;}
+.kv span:first-child{color:var(--text-dim);}
+.code-block{background:#060a14; border:1px solid var(--border); border-radius:8px; padding:12px 14px; font-family:var(--mono); font-size:11.3px; color:var(--green); overflow-x:auto; white-space:pre; margin-top:8px;}
+.code-tabs{display:flex; gap:4px; margin-top:12px;}
+.code-tab{padding:5px 12px; font-size:11px; border-radius:6px 6px 0 0; background:var(--bg-raised); color:var(--text-dim); cursor:pointer; border:1px solid var(--border); border-bottom:none;}
+.code-tab.active{background:#060a14; color:var(--blue);}
+
+.copilot-shell{display:flex; flex-direction:column; height:560px; border:1px solid var(--border); border-radius:14px; background:var(--bg-panel);}
+.copilot-msgs{flex:1; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:14px;}
+.msg{max-width:78%; padding:10px 14px; border-radius:12px; font-size:12.5px; line-height:1.55; white-space:pre-wrap;}
+.msg.user{align-self:flex-end; background:var(--blue); color:#fff;}
+.msg.ai{align-self:flex-start; background:var(--bg-raised); border:1px solid var(--border); color:var(--text);}
+.msg.sys{align-self:center; color:var(--text-dim); font-size:11px; font-style:italic;}
+.copilot-input{display:flex; gap:8px; padding:14px; border-top:1px solid var(--border);}
+.suggestion-chip{padding:5px 11px; border:1px solid var(--border); border-radius:20px; font-size:11px; color:var(--text-dim); cursor:pointer; white-space:nowrap;}
+.suggestion-chip:hover{border-color:var(--blue-dim); color:var(--blue);}
+.typing{display:inline-flex; gap:3px;}
+.typing span{width:5px; height:5px; background:#fff; border-radius:50%; animation:tb 1.1s infinite;}
+.typing span:nth-child(2){animation-delay:.15s;} .typing span:nth-child(3){animation-delay:.3s;}
+@keyframes tb{0%,60%,100%{opacity:.25; transform:translateY(0);} 30%{opacity:1; transform:translateY(-3px);}}
+
+.chart-box{position:relative; height:190px;}
+.footnote{font-size:10.5px; color:var(--text-dim); margin-top:12px; border-top:1px dashed var(--border); padding-top:10px;}
+.placeholder-card{border:1px dashed var(--border-bright); border-radius:12px; padding:24px; text-align:center; color:var(--text-dim); font-size:12px;}
+
+@media (max-width:1200px){
+  .dash-grid{grid-template-columns:1fr;}
+  .row3{grid-template-columns:1fr 1fr;}
+}
+@media (max-width:900px){
+  .metrics-row{grid-template-columns:repeat(2,1fr);}
+  .row3, .row-resources{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="content">
+    <div class="topbar" id="topbar"></div>
+    <div class="main" id="mainArea"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+/* =========================================================================
+   CloudSentinel AI — DATA LAYER
+   Simulated multi-cloud inventory (stand-in for a live AWS/Azure/GCP pull —
+   there's no live cloud connection in this environment, so this file plays
+   the role Module 1 "Cloud Asset Discovery" would normally play).
+   Every module downstream of this file (scanner, risk engine, IAM graph,
+   terraform scanner, remediation, compliance) runs REAL logic against it.
+   ========================================================================= */
+
+const INVENTORY = [
+  { id:"i-0a1b2c3d4e", type:"EC2", provider:"AWS", region:"ap-south-1", name:"web-frontend-01",
+    publicIp:"13.234.11.82", sgOpenSsh:true, sgOpenRdp:false, encryptedVolume:false, tags:{Owner:"platform-team"}, criticality:"high" },
+  { id:"cloudsentinel-prod-data", type:"S3", provider:"AWS", region:"ap-south-1", name:"cloudsentinel-prod-data",
+    publicRead:true, encrypted:false, versioning:false, sensitiveData:true, criticality:"critical" },
+  { id:"prod-orders-db", type:"RDS", provider:"AWS", region:"ap-south-1", name:"prod-orders-db",
+    publiclyAccessible:true, encrypted:false, backupRetentionDays:0, sensitiveData:true, criticality:"critical" },
+  { id:"svc-deploy-bot", type:"IAMUser", provider:"AWS", region:"global", name:"svc-deploy-bot",
+    accessKeyAgeDays:412, mfaEnabled:false, directAdminPolicy:true, consoleAccess:false, criticality:"critical" },
+  { id:"lambda-exec-role", type:"IAMRole", provider:"AWS", region:"global", name:"lambda-exec-role",
+    hasPassRole:true, trustPolicyWildcard:false, crossAccountTrust:false, criticality:"high" },
+  { id:"sg-default-vpc0912", type:"SecurityGroup", provider:"AWS", region:"ap-south-1", name:"default",
+    allowAllInbound:true, criticality:"high" },
+  { id:"cloudtrail-apsouth1", type:"CloudTrail", provider:"AWS", region:"ap-south-1", name:"management-trail",
+    enabled:false, criticality:"critical" },
+  { id:"guardduty-org", type:"GuardDuty", provider:"AWS", region:"ap-south-1", name:"org-detector",
+    enabled:false, criticality:"high" },
+  { id:"kms-billing-key", type:"KMS", provider:"AWS", region:"ap-south-1", name:"billing-cmk",
+    rotationEnabled:false, orphaned:true, criticality:"medium" },
+  { id:"billing-processor", type:"Lambda", provider:"AWS", region:"ap-south-1", name:"billing-processor",
+    hardcodedSecretEnvVar:true, sensitiveData:true, criticality:"critical" },
+  { id:"vol-0912aab", type:"EBS", provider:"AWS", region:"ap-south-1", name:"web-frontend-01-root",
+    encrypted:false, attachedTo:"i-0a1b2c3d4e", criticality:"medium" },
+  { id:"eks-prod-cluster", type:"EKS", provider:"AWS", region:"ap-south-1", name:"prod-cluster",
+    publicEndpoint:true, privateEndpoint:false, criticality:"high" },
+  { id:"route53-corp-domain", type:"Route53", provider:"AWS", region:"global", name:"corp-domain.com",
+    dnssecEnabled:false, criticality:"low" },
+  { id:"csprodstorage", type:"StorageAccount", provider:"Azure", region:"centralindia", name:"csprodstorage",
+    publicBlobAccess:true, encrypted:true, sensitiveData:true, criticality:"critical" },
+  { id:"cs-gcp-assets", type:"GCSBucket", provider:"GCP", region:"asia-south1", name:"cs-gcp-assets",
+    allUsersObjectViewer:true, sensitiveData:false, criticality:"high" },
+  { id:"prod-db-password", type:"SecretsManagerSecret", provider:"AWS", region:"ap-south-1", name:"prod/db/password",
+    lastRotatedDaysAgo:390, criticality:"high" },
+  { id:"ecs-orders-task", type:"ECSTask", provider:"AWS", region:"ap-south-1", name:"orders-task-def",
+    runsAsRoot:true, noResourceLimits:true, criticality:"medium" },
+  { id:"intern-analyst", type:"IAMUser", provider:"AWS", region:"global", name:"intern-analyst",
+    mfaEnabled:false, consoleAccess:true, canAssumeCrossAccountAuditRole:true, criticality:"high" },
+  { id:"vpc-0912-main", type:"VPC", provider:"AWS", region:"ap-south-1", name:"main-vpc",
+    flowLogsEnabled:false, criticality:"medium" },
+  { id:"snap-0912", type:"Snapshot", provider:"AWS", region:"ap-south-1", name:"prod-orders-db-snap",
+    encrypted:false, publiclyShared:true, criticality:"critical" },
+];
+
+/* ---- IAM graph: nodes + edges for privilege-escalation path analysis ---- */
+const IAM_GRAPH = {
+  nodes: [
+    { id:"intern-analyst", label:"intern-analyst", kind:"user" },
+    { id:"svc-deploy-bot", label:"svc-deploy-bot", kind:"user" },
+    { id:"dev-jane", label:"dev.jane", kind:"user" },
+    { id:"cross-account-audit-role", label:"cross-account-audit-role", kind:"role" },
+    { id:"lambda-exec-role", label:"lambda-exec-role", kind:"role" },
+    { id:"ec2-instance-role", label:"ec2-instance-role", kind:"role" },
+    { id:"PassRolePolicy", label:"iam:PassRole (custom)", kind:"policy" },
+    { id:"AdministratorAccess", label:"AdministratorAccess", kind:"policy_admin" },
+    { id:"S3FullAccess", label:"AmazonS3FullAccess", kind:"policy" },
+    { id:"PowerUserAccess", label:"PowerUserAccess", kind:"policy" },
+  ],
+  edges: [
+    { from:"svc-deploy-bot", to:"AdministratorAccess", type:"directly attached" },
+    { from:"intern-analyst", to:"cross-account-audit-role", type:"sts:AssumeRole" },
+    { from:"cross-account-audit-role", to:"PassRolePolicy", type:"policy attached" },
+    { from:"PassRolePolicy", to:"ec2-instance-role", type:"iam:PassRole allowed *" },
+    { from:"ec2-instance-role", to:"AdministratorAccess", type:"directly attached" },
+    { from:"dev-jane", to:"lambda-exec-role", type:"sts:AssumeRole" },
+    { from:"lambda-exec-role", to:"S3FullAccess", type:"policy attached" },
+    { from:"lambda-exec-role", to:"PowerUserAccess", type:"policy attached" },
+  ]
+};
+
+/* ---- Sample vulnerable Terraform for Module 5 (IaC scanner) ---- */
+const SAMPLE_TF = `provider "aws" {
+  region     = "ap-south-1"
+  access_key = "AKIAIOSFODNN7EXAMPLE"
+  secret_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+}
+
+resource "aws_s3_bucket" "prod_data" {
+  bucket = "cloudsentinel-prod-data"
+  acl    = "public-read"
+}
+
+resource "aws_security_group" "web_sg" {
+  name = "web-sg"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 3389
+    to_port     = 3389
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_db_instance" "orders_db" {
+  identifier          = "prod-orders-db"
+  engine              = "postgres"
+  instance_class      = "db.t3.medium"
+  publicly_accessible = true
+  skip_final_snapshot = true
+}
+
+resource "aws_iam_policy" "broad_access" {
+  name = "broad-access"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "*"
+      Resource = "*"
+    }]
+  })
+}
+`;
+
+/* ---- CIS AWS Foundations control mapping (subset, for Module 9) ---- */
+const CIS_CONTROLS = [
+  { id:"CIS 1.4", desc:"Ensure no root account access key exists", ruleIds:[] },
+  { id:"CIS 1.12", desc:"Ensure credentials unused for 90+ days are disabled", ruleIds:["old-access-key"] },
+  { id:"CIS 1.16", desc:"Ensure IAM policies are attached only to groups or roles", ruleIds:["direct-admin-policy"] },
+  { id:"CIS 1.22", desc:"Ensure MFA is enabled for all IAM users with console access", ruleIds:["mfa-disabled"] },
+  { id:"CIS 2.1", desc:"Ensure CloudTrail is enabled in all regions", ruleIds:["cloudtrail-disabled"] },
+  { id:"CIS 2.8", desc:"Ensure rotation for CMKs is enabled", ruleIds:["kms-rotation-disabled"] },
+  { id:"CIS 3.1", desc:"Ensure GuardDuty is enabled", ruleIds:["guardduty-disabled"] },
+  { id:"CIS 4.1", desc:"Ensure no security groups allow ingress from 0.0.0.0/0 to port 22", ruleIds:["open-ssh"] },
+  { id:"CIS 4.3", desc:"Ensure default security group restricts all traffic", ruleIds:["default-sg-open"] },
+  { id:"CIS 5.1", desc:"Ensure VPC flow logging is enabled", ruleIds:["vpc-flowlogs-disabled"] },
+  { id:"CIS S3.1", desc:"Ensure S3 buckets are not publicly readable", ruleIds:["s3-public-read"] },
+  { id:"CIS RDS.1", desc:"Ensure RDS instances are not publicly accessible", ruleIds:["rds-public"] },
+];
+
+/* ---- Additional framework mappings (subset), used by the Compliance Summary
+   widget — same computed-from-live-findings approach as CIS_CONTROLS above,
+   just a different, smaller slice of controls per framework. ---- */
+const NIST_CONTROLS = [
+  { id:"AC-3", desc:"Access enforcement — least privilege on identities", ruleIds:["direct-admin-policy","mfa-disabled","old-access-key"] },
+  { id:"SC-7", desc:"Boundary protection — restrict network ingress", ruleIds:["open-ssh","default-sg-open","eks-public-endpoint"] },
+  { id:"SC-28", desc:"Protection of information at rest", ruleIds:["s3-unencrypted","rds-unencrypted","ebs-unencrypted","snapshot-public-unencrypted"] },
+  { id:"AU-2", desc:"Audit events are captured", ruleIds:["cloudtrail-disabled","vpc-flowlogs-disabled"] },
+];
+const PCI_CONTROLS = [
+  { id:"PCI 1.2", desc:"Restrict inbound/outbound traffic to what's necessary", ruleIds:["open-ssh","default-sg-open"] },
+  { id:"PCI 3.4", desc:"Render stored cardholder-adjacent data unreadable", ruleIds:["s3-unencrypted","rds-unencrypted","snapshot-public-unencrypted"] },
+  { id:"PCI 8.3", desc:"Secure all individual non-console admin access with MFA", ruleIds:["mfa-disabled"] },
+  { id:"PCI 10.1", desc:"Audit trails linking access to system components", ruleIds:["cloudtrail-disabled"] },
+];
+const ISO_CONTROLS = [
+  { id:"A.9.2", desc:"User access provisioning follows least privilege", ruleIds:["direct-admin-policy","old-access-key"] },
+  { id:"A.10.1", desc:"Cryptographic controls protect data at rest", ruleIds:["s3-unencrypted","rds-unencrypted","ebs-unencrypted","kms-rotation-disabled"] },
+  { id:"A.12.4", desc:"Event logging and monitoring", ruleIds:["cloudtrail-disabled","guardduty-disabled","vpc-flowlogs-disabled"] },
+];
+const CSA_CONTROLS = [
+  { id:"IAM-04", desc:"Segregation of duties for privileged access", ruleIds:["direct-admin-policy"] },
+  { id:"DSI-01", desc:"Data classification and protection at rest", ruleIds:["s3-unencrypted","rds-unencrypted","snapshot-public-unencrypted","azure-public-blob","gcp-allusers-viewer"] },
+  { id:"IVS-06", desc:"Network security — no unrestricted ingress", ruleIds:["open-ssh","default-sg-open"] },
+];
+
+/* ---- Small known-bad IP/ASN sample set for Module 10 (Threat Intelligence) ----
+   A handful of illustrative indicators to demonstrate real IP-match logic
+   against discovered public IPs — not a live threat-intel feed. */
+const THREAT_INTEL_IOCS = [
+  { ip:"13.234.11.82", type:"Known scanning host", source:"Sample IOC list", confidence:"Medium" },
+  { ip:"185.220.101.7", type:"TOR exit node", source:"Sample IOC list", confidence:"High" },
+  { ip:"45.155.205.233", type:"Crypto-mining C2", source:"Sample IOC list", confidence:"High" },
+];
+
+
+/* =========================================================================
+   CloudSentinel AI — SCAN & RISK ENGINE
+   Module 2 (misconfiguration scanner) + Module 3 (risk engine) +
+   Module 6 (remediation generator) as real, executable logic.
+   ========================================================================= */
+
+/* Each rule: id, check(resource)->bool, severity, cis id list handled in data.js,
+   message, weight inputs used by the risk formula, remediation() generator. */
+const RULES = [
+  {
+    id:"open-ssh", name:"Security group allows SSH (22) from 0.0.0.0/0", severity:"critical",
+    appliesTo:"EC2", check:r=>r.type==="EC2" && r.sgOpenSsh,
+    exposure:1.0, privilege:0.3, sensitivity:0.5,
+    message:"Instance is reachable on port 22 from any IP on the internet.",
+    remediation:r=>({
+      cli:`aws ec2 revoke-security-group-ingress \\\n  --group-id sg-web \\\n  --protocol tcp --port 22 --cidr 0.0.0.0/0`,
+      terraform:`# remove the 0.0.0.0/0 ingress rule and replace with a scoped CIDR\ningress {\n  from_port   = 22\n  to_port     = 22\n  protocol    = "tcp"\n  cidr_blocks = ["10.0.0.0/16"]  # office/VPN range only\n}`,
+      boto3:`import boto3\nec2 = boto3.client("ec2")\nec2.revoke_security_group_ingress(\n    GroupId="sg-web",\n    IpPermissions=[{"IpProtocol":"tcp","FromPort":22,"ToPort":22,\n                    "IpRanges":[{"CidrIp":"0.0.0.0/0"}]}]\n)`,
+      rollback:"Re-add the 0.0.0.0/0 rule via the same API if a break is detected — keep the original rule JSON in the change ticket before applying."
+    })
+  },
+  {
+    id:"s3-public-read", name:"S3 bucket has public-read ACL", severity:"critical",
+    appliesTo:"S3", check:r=>r.type==="S3" && r.publicRead,
+    exposure:1.0, privilege:0.2, sensitivity:0.9,
+    message:"Bucket objects are readable by anyone on the internet without authentication.",
+    remediation:r=>({
+      cli:`aws s3api put-public-access-block \\\n  --bucket ${r.name} \\\n  --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true`,
+      terraform:`resource "aws_s3_bucket_public_access_block" "${r.name.replace(/-/g,'_')}" {\n  bucket                  = "${r.name}"\n  block_public_acls       = true\n  ignore_public_acls      = true\n  block_public_policy     = true\n  restrict_public_buckets = true\n}`,
+      boto3:`import boto3\ns3 = boto3.client("s3")\ns3.put_public_access_block(\n    Bucket="${r.name}",\n    PublicAccessBlockConfiguration={\n        "BlockPublicAcls": True, "IgnorePublicAcls": True,\n        "BlockPublicPolicy": True, "RestrictPublicBuckets": True\n    }\n)`,
+      rollback:"Public access block is additive-safe; disable individual flags if a legitimate public-website use case is confirmed."
+    })
+  },
+  {
+    id:"s3-unencrypted", name:"S3 bucket has no default encryption", severity:"high",
+    appliesTo:"S3", check:r=>r.type==="S3" && r.encrypted===false,
+    exposure:0.3, privilege:0.1, sensitivity:0.8,
+    message:"Objects are stored without server-side encryption at rest.",
+    remediation:r=>({
+      cli:`aws s3api put-bucket-encryption --bucket ${r.name} --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"aws:kms"}}]}'`,
+      terraform:`resource "aws_s3_bucket_server_side_encryption_configuration" "${r.name.replace(/-/g,'_')}" {\n  bucket = "${r.name}"\n  rule { apply_server_side_encryption_by_default { sse_algorithm = "aws:kms" } }\n}`,
+      boto3:`s3.put_bucket_encryption(Bucket="${r.name}", ServerSideEncryptionConfiguration={"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"aws:kms"}}]})`,
+      rollback:"Encryption-at-rest changes are transparent to readers with correct KMS permissions; no functional rollback usually needed."
+    })
+  },
+  {
+    id:"rds-public", name:"RDS instance is publicly accessible", severity:"critical",
+    appliesTo:"RDS", check:r=>r.type==="RDS" && r.publiclyAccessible,
+    exposure:1.0, privilege:0.2, sensitivity:0.95,
+    message:"Database has a public endpoint reachable from the internet.",
+    remediation:r=>({
+      cli:`aws rds modify-db-instance --db-instance-identifier ${r.name} --no-publicly-accessible --apply-immediately`,
+      terraform:`resource "aws_db_instance" "${r.name.replace(/-/g,'_')}" {\n  # ...\n  publicly_accessible = false\n}`,
+      boto3:`rds = boto3.client("rds")\nrds.modify_db_instance(DBInstanceIdentifier="${r.name}", PubliclyAccessible=False, ApplyImmediately=True)`,
+      rollback:"Confirm application connects via VPC/private subnet before applying; keep a maintenance window for the apply-immediately restart."
+    })
+  },
+  {
+    id:"rds-unencrypted", name:"RDS storage is unencrypted", severity:"high",
+    appliesTo:"RDS", check:r=>r.type==="RDS" && r.encrypted===false,
+    exposure:0.2, privilege:0.1, sensitivity:0.9,
+    message:"Database storage volume has no encryption at rest.",
+    remediation:r=>({
+      cli:`# RDS storage encryption cannot be toggled in place — snapshot, copy encrypted, restore\naws rds create-db-snapshot --db-instance-identifier ${r.name} --db-snapshot-identifier ${r.name}-presnap\naws rds copy-db-snapshot --source-db-snapshot-identifier ${r.name}-presnap --target-db-snapshot-identifier ${r.name}-enc --kms-key-id alias/aws/rds\naws rds restore-db-instance-from-db-snapshot --db-instance-identifier ${r.name}-encrypted --db-snapshot-identifier ${r.name}-enc`,
+      terraform:`resource "aws_db_instance" "${r.name.replace(/-/g,'_')}" {\n  storage_encrypted = true\n  kms_key_id        = aws_kms_key.rds.arn\n}`,
+      boto3:`# encryption requires the snapshot-copy-restore path above; not a live in-place modify_db_instance flag`,
+      rollback:"Keep the original unencrypted instance running until the new encrypted instance passes smoke tests, then cut over DNS/connection string."
+    })
+  },
+  {
+    id:"direct-admin-policy", name:"IAM user has AdministratorAccess attached directly", severity:"critical",
+    appliesTo:"IAMUser", check:r=>r.type==="IAMUser" && r.directAdminPolicy,
+    exposure:0.4, privilege:1.0, sensitivity:0.7,
+    message:"Full administrative privileges attached directly to a user rather than via a role.",
+    remediation:r=>({
+      cli:`aws iam detach-user-policy --user-name ${r.name} --policy-arn arn:aws:iam::aws:policy/AdministratorAccess`,
+      terraform:`# remove the aws_iam_user_policy_attachment resource binding AdministratorAccess to this user`,
+      boto3:`iam = boto3.client("iam")\niam.detach_user_policy(UserName="${r.name}", PolicyArn="arn:aws:iam::aws:policy/AdministratorAccess")`,
+      rollback:"Grant a scoped role via sts:AssumeRole instead, with a break-glass admin role behind MFA + approval for true emergencies."
+    })
+  },
+  {
+    id:"old-access-key", name:"IAM access key older than 90 days", severity:"high",
+    appliesTo:"IAMUser", check:r=>r.type==="IAMUser" && r.accessKeyAgeDays>90,
+    exposure:0.2, privilege:0.5, sensitivity:0.4,
+    message:"Long-lived access key increases exposure window if leaked.",
+    remediation:r=>({
+      cli:`aws iam create-access-key --user-name ${r.name}\naws iam update-access-key --user-name ${r.name} --access-key-id <OLD_KEY_ID> --status Inactive\n# after rollout: aws iam delete-access-key --user-name ${r.name} --access-key-id <OLD_KEY_ID>`,
+      terraform:`# rotate via CI secret store; access keys should not be managed in terraform state long-term`,
+      boto3:`iam.update_access_key(UserName="${r.name}", AccessKeyId="<OLD_KEY_ID>", Status="Inactive")`,
+      rollback:"Keep the old key Inactive (not deleted) for 48h in case of missed rollout, then delete."
+    })
+  },
+  {
+    id:"mfa-disabled", name:"Console user without MFA enabled", severity:"high",
+    appliesTo:"IAMUser", check:r=>r.type==="IAMUser" && r.consoleAccess && r.mfaEnabled===false,
+    exposure:0.6, privilege:0.4, sensitivity:0.5,
+    message:"Console login is protected by password only.",
+    remediation:r=>({
+      cli:`aws iam enable-mfa-device --user-name ${r.name} --serial-number <DEVICE_ARN> --authentication-code1 <CODE1> --authentication-code2 <CODE2>`,
+      terraform:`# enforce via IAM policy condition instead of per-user config:\n"Condition": { "BoolIfExists": { "aws:MultiFactorAuthPresent": "false" } }  # combined with Deny`,
+      boto3:`iam.enable_mfa_device(UserName="${r.name}", SerialNumber="<DEVICE_ARN>", AuthenticationCode1="<CODE1>", AuthenticationCode2="<CODE2>")`,
+      rollback:"None needed — MFA enrollment is additive; coordinate device enrollment with the user first."
+    })
+  },
+  {
+    id:"default-sg-open", name:"Default security group allows all inbound traffic", severity:"high",
+    appliesTo:"SecurityGroup", check:r=>r.type==="SecurityGroup" && r.allowAllInbound,
+    exposure:0.9, privilege:0.2, sensitivity:0.4,
+    message:"The VPC default security group has an open ingress rule, so anything attached to it inherits exposure.",
+    remediation:r=>({
+      cli:`aws ec2 revoke-security-group-ingress --group-id ${r.id} --protocol -1 --port -1 --cidr 0.0.0.0/0`,
+      terraform:`resource "aws_default_security_group" "default" {\n  vpc_id = aws_vpc.main.id\n  # no ingress/egress blocks = deny all by default\n}`,
+      boto3:`ec2.revoke_security_group_ingress(GroupId="${r.id}", IpPermissions=[{"IpProtocol":"-1","IpRanges":[{"CidrIp":"0.0.0.0/0"}]}])`,
+      rollback:"Confirm nothing actually relies on the default SG before locking it down; move workloads to purpose-built SGs first."
+    })
+  },
+  {
+    id:"cloudtrail-disabled", name:"CloudTrail disabled in region", severity:"critical",
+    appliesTo:"CloudTrail", check:r=>r.type==="CloudTrail" && !r.enabled,
+    exposure:0.1, privilege:0.1, sensitivity:0.6,
+    message:"No audit trail of API activity in this region — incident investigation would have a blind spot.",
+    remediation:r=>({
+      cli:`aws cloudtrail create-trail --name management-trail --s3-bucket-name cs-audit-logs --is-multi-region-trail\naws cloudtrail start-logging --name management-trail`,
+      terraform:`resource "aws_cloudtrail" "management" {\n  name                          = "management-trail"\n  s3_bucket_name                = aws_s3_bucket.audit_logs.id\n  is_multi_region_trail         = true\n  enable_log_file_validation    = true\n}`,
+      boto3:`ct = boto3.client("cloudtrail")\nct.start_logging(Name="management-trail")`,
+      rollback:"Logging-only change; no functional rollback risk."
+    })
+  },
+  {
+    id:"guardduty-disabled", name:"GuardDuty threat detection disabled", severity:"high",
+    appliesTo:"GuardDuty", check:r=>r.type==="GuardDuty" && !r.enabled,
+    exposure:0.1, privilege:0.1, sensitivity:0.3,
+    message:"No managed threat-detection service watching for anomalous or malicious activity.",
+    remediation:r=>({
+      cli:`aws guardduty create-detector --enable`,
+      terraform:`resource "aws_guardduty_detector" "org" {\n  enable = true\n}`,
+      boto3:`gd = boto3.client("guardduty")\ngd.create_detector(Enable=True)`,
+      rollback:"Detection-only service; safe to enable with no downstream impact."
+    })
+  },
+  {
+    id:"kms-rotation-disabled", name:"KMS key rotation disabled", severity:"medium",
+    appliesTo:"KMS", check:r=>r.type==="KMS" && !r.rotationEnabled,
+    exposure:0.1, privilege:0.3, sensitivity:0.5,
+    message:"Customer-managed key material is never rotated, extending blast radius if compromised.",
+    remediation:r=>({
+      cli:`aws kms enable-key-rotation --key-id ${r.id}`,
+      terraform:`resource "aws_kms_key" "billing" {\n  enable_key_rotation = true\n}`,
+      boto3:`kms = boto3.client("kms")\nkms.enable_key_rotation(KeyId="${r.id}")`,
+      rollback:"Rotation is transparent to consumers; no rollback typically required."
+    })
+  },
+  {
+    id:"lambda-hardcoded-secret", name:"Hardcoded secret in Lambda environment variable", severity:"critical",
+    appliesTo:"Lambda", check:r=>r.type==="Lambda" && r.hardcodedSecretEnvVar,
+    exposure:0.3, privilege:0.6, sensitivity:0.9,
+    message:"Plaintext credential material stored directly in function configuration instead of Secrets Manager.",
+    remediation:r=>({
+      cli:`aws secretsmanager create-secret --name prod/billing/api-key --secret-string '{"key":"<ROTATED_VALUE>"}'\naws lambda update-function-configuration --function-name ${r.name} --environment "Variables={SECRET_ARN=arn:aws:secretsmanager:...}"`,
+      terraform:`resource "aws_lambda_function" "billing" {\n  environment {\n    variables = { SECRET_ARN = aws_secretsmanager_secret.billing_key.arn }\n  }\n}`,
+      boto3:`lam = boto3.client("lambda")\nlam.update_function_configuration(FunctionName="${r.name}", Environment={"Variables":{"SECRET_ARN":"arn:aws:secretsmanager:..."}})`,
+      rollback:"Rotate the exposed secret immediately regardless of rollout status — treat it as already compromised."
+    })
+  },
+  {
+    id:"ebs-unencrypted", name:"EBS volume unencrypted", severity:"medium",
+    appliesTo:"EBS", check:r=>r.type==="EBS" && !r.encrypted,
+    exposure:0.1, privilege:0.1, sensitivity:0.6,
+    message:"Volume data at rest is unencrypted.",
+    remediation:r=>({
+      cli:`aws ec2 create-snapshot --volume-id ${r.id}\naws ec2 copy-snapshot --source-snapshot-id <SNAP_ID> --encrypted --source-region ap-south-1\n# then create a new volume from the encrypted snapshot and swap it in`,
+      terraform:`resource "aws_ebs_volume" "web_root" {\n  encrypted = true\n}`,
+      boto3:`# snapshot -> encrypted copy -> new volume -> attach, same pattern as RDS storage encryption`,
+      rollback:"Keep original volume detached (not deleted) until the encrypted replacement is verified."
+    })
+  },
+  {
+    id:"eks-public-endpoint", name:"EKS API server has public endpoint with no private endpoint", severity:"high",
+    appliesTo:"EKS", check:r=>r.type==="EKS" && r.publicEndpoint && !r.privateEndpoint,
+    exposure:0.7, privilege:0.5, sensitivity:0.6,
+    message:"Cluster control plane is reachable from the internet with no private path as fallback.",
+    remediation:r=>({
+      cli:`aws eks update-cluster-config --name ${r.name} --resources-vpc-config endpointPublicAccess=true,endpointPrivateAccess=true,publicAccessCidrs="203.0.113.0/24"`,
+      terraform:`resource "aws_eks_cluster" "prod" {\n  vpc_config {\n    endpoint_private_access = true\n    endpoint_public_access  = true\n    public_access_cidrs     = ["203.0.113.0/24"]\n  }\n}`,
+      boto3:`eks = boto3.client("eks")\neks.update_cluster_config(name="${r.name}", resourcesVpcConfig={"endpointPrivateAccess":True,"publicAccessCidrs":["203.0.113.0/24"]})`,
+      rollback:"Verify CI/CD and admin access paths work through the private endpoint or VPN before fully closing public access."
+    })
+  },
+  {
+    id:"dnssec-disabled", name:"DNSSEC not enabled on public hosted zone", severity:"low",
+    appliesTo:"Route53", check:r=>r.type==="Route53" && !r.dnssecEnabled,
+    exposure:0.3, privilege:0.1, sensitivity:0.2,
+    message:"Domain is vulnerable to DNS spoofing/cache-poisoning without signed responses.",
+    remediation:r=>({
+      cli:`aws route53 enable-hosted-zone-dnssec --hosted-zone-id <ZONE_ID>`,
+      terraform:`resource "aws_route53_key_signing_key" "ksk" { /* ... */ }\nresource "aws_route53_hosted_zone_dnssec" "this" { hosted_zone_id = aws_route53_zone.corp.zone_id }`,
+      boto3:`r53 = boto3.client("route53")\nr53.enable_hosted_zone_dnssec(HostedZoneId="<ZONE_ID>")`,
+      rollback:"Roll out KSK/ZSK carefully — DNSSEC misconfiguration can take a domain offline; stage in a test zone first."
+    })
+  },
+  {
+    id:"azure-public-blob", name:"Azure Storage Account allows public blob access", severity:"critical",
+    appliesTo:"StorageAccount", check:r=>r.type==="StorageAccount" && r.publicBlobAccess,
+    exposure:1.0, privilege:0.2, sensitivity:0.9,
+    message:"Blobs in this storage account can be read anonymously.",
+    remediation:r=>({
+      cli:`az storage account update --name ${r.name} --allow-blob-public-access false`,
+      terraform:`resource "azurerm_storage_account" "${r.name}" {\n  allow_nested_items_to_be_public = false\n}`,
+      boto3:`# Azure SDK equivalent:\n# StorageManagementClient.storage_accounts.update(..., allow_blob_public_access=False)`,
+      rollback:"Confirm no public CDN/website scenario depends on anonymous blob access before disabling."
+    })
+  },
+  {
+    id:"gcp-allusers-viewer", name:"GCS bucket grants allUsers objectViewer", severity:"high",
+    appliesTo:"GCSBucket", check:r=>r.type==="GCSBucket" && r.allUsersObjectViewer,
+    exposure:0.9, privilege:0.2, sensitivity:0.5,
+    message:"Bucket objects are publicly listable/readable by anyone.",
+    remediation:r=>({
+      cli:`gsutil iam ch -d allUsers:objectViewer gs://${r.name}`,
+      terraform:`resource "google_storage_bucket_iam_binding" "viewer" {\n  bucket  = "${r.name}"\n  role    = "roles/storage.objectViewer"\n  members = []  # remove allUsers\n}`,
+      boto3:`# GCP client library equivalent:\n# bucket.iam_configuration.public_access_prevention = "enforced"`,
+      rollback:"Confirm no public static-asset use case depends on allUsers before removing."
+    })
+  },
+  {
+    id:"secret-not-rotated", name:"Secret not rotated in over a year", severity:"medium",
+    appliesTo:"SecretsManagerSecret", check:r=>r.type==="SecretsManagerSecret" && r.lastRotatedDaysAgo>180,
+    exposure:0.1, privilege:0.4, sensitivity:0.6,
+    message:"Long-lived credential increases blast radius if ever leaked.",
+    remediation:r=>({
+      cli:`aws secretsmanager rotate-secret --secret-id ${r.name} --rotation-lambda-arn <ROTATION_LAMBDA_ARN> --rotation-rules AutomaticallyAfterDays=90`,
+      terraform:`resource "aws_secretsmanager_secret_rotation" "db_password" {\n  secret_id           = "${r.name}"\n  rotation_lambda_arn = aws_lambda_function.rotator.arn\n  rotation_rules { automatically_after_days = 90 }\n}`,
+      boto3:`sm = boto3.client("secretsmanager")\nsm.rotate_secret(SecretId="${r.name}", RotationRules={"AutomaticallyAfterDays":90})`,
+      rollback:"Test the rotation Lambda against a staging secret first — failed rotations can lock out the app."
+    })
+  },
+  {
+    id:"ecs-root-container", name:"ECS task runs as root with no resource limits", severity:"medium",
+    appliesTo:"ECSTask", check:r=>r.type==="ECSTask" && r.runsAsRoot,
+    exposure:0.2, privilege:0.5, sensitivity:0.3,
+    message:"Container escape would grant root on the host's container runtime namespace.",
+    remediation:r=>({
+      cli:`# update task definition JSON: set "user": "1000:1000", add cpu/memory limits, then register + deploy`,
+      terraform:`resource "aws_ecs_task_definition" "orders" {\n  container_definitions = jsonencode([{\n    user   = "1000:1000"\n    memory = 512\n    cpu    = 256\n  }])\n}`,
+      boto3:`ecs = boto3.client("ecs")\n# register_task_definition with updated containerDefinitions including "user" and resource limits`,
+      rollback:"Test the non-root user has correct file permissions in the image before promoting to prod."
+    })
+  },
+  {
+    id:"vpc-flowlogs-disabled", name:"VPC flow logging disabled", severity:"medium",
+    appliesTo:"VPC", check:r=>r.type==="VPC" && !r.flowLogsEnabled,
+    exposure:0.1, privilege:0.1, sensitivity:0.4,
+    message:"No network traffic metadata is captured for this VPC, limiting incident investigation.",
+    remediation:r=>({
+      cli:`aws ec2 create-flow-logs --resource-type VPC --resource-ids ${r.id} --traffic-type ALL --log-destination-type s3 --log-destination arn:aws:s3:::cs-flow-logs`,
+      terraform:`resource "aws_flow_log" "main" {\n  vpc_id               = "${r.id}"\n  traffic_type         = "ALL"\n  log_destination_type = "s3"\n  log_destination      = aws_s3_bucket.flow_logs.arn\n}`,
+      boto3:`ec2.create_flow_logs(ResourceType="VPC", ResourceIds=["${r.id}"], TrafficType="ALL", LogDestinationType="s3", LogDestination="arn:aws:s3:::cs-flow-logs")`,
+      rollback:"Logging-only; no functional rollback risk. Watch S3 storage cost on high-traffic VPCs."
+    })
+  },
+  {
+    id:"snapshot-public-unencrypted", name:"Unencrypted snapshot shared publicly", severity:"critical",
+    appliesTo:"Snapshot", check:r=>r.type==="Snapshot" && r.publiclyShared && !r.encrypted,
+    exposure:1.0, privilege:0.3, sensitivity:0.95,
+    message:"A full database snapshot is both unencrypted and shared with the public — anyone can restore and read it.",
+    remediation:r=>({
+      cli:`aws rds modify-db-snapshot-attribute --db-snapshot-identifier ${r.id} --attribute-name restore --values-to-remove all`,
+      terraform:`# remove any aws_db_snapshot / aws_ram_resource_share exposing this snapshot publicly`,
+      boto3:`rds.modify_db_snapshot_attribute(DBSnapshotIdentifier="${r.id}", AttributeName="restore", ValuesToRemove=["all"])`,
+      rollback:"Treat any data in this snapshot as potentially already exfiltrated; rotate credentials referenced in the underlying DB immediately."
+    })
+  },
+];
+
+/* ---- run the scanner: real evaluation of RULES against INVENTORY ---- */
+function runScan(inventory, rules){
+  const findings = [];
+  inventory.forEach(resource=>{
+    rules.forEach(rule=>{
+      if(rule.check(resource)){
+        findings.push(buildFinding(resource, rule));
+      }
+    });
+  });
+  return findings.sort((a,b)=>b.riskScore-a.riskScore);
+}
+
+/* ---- Module 3: AI risk engine — deterministic weighted-blast-radius scoring ----
+   score blends: rule severity base, exposure (internet reachability),
+   privilege (IAM impact), sensitivity (data classification), and
+   criticality of the resource + a blast-radius estimate from co-located
+   resources sharing tags/region/type-adjacency. This mirrors what a real
+   "AI risk engine" module would compute — the AI framing in the spec is a
+   scoring/explanation layer over structured signals like these. */
+const SEVERITY_BASE = { critical:78, high:58, medium:38, low:20 };
+const CRIT_MULT = { critical:1.25, high:1.1, medium:1.0, low:0.85 };
+
+function estimateBlastRadius(resource, inventory){
+  return inventory.filter(r=>
+    r.id!==resource.id && (r.region===resource.region || r.provider===resource.provider)
+  ).length + 1;
+}
+
+function buildFinding(resource, rule){
+  const base = SEVERITY_BASE[rule.severity];
+  const critMult = CRIT_MULT[resource.criticality || "medium"];
+  const signalScore = (rule.exposure*22) + (rule.privilege*14) + (rule.sensitivity*14);
+  let riskScore = Math.round((base + signalScore) * critMult);
+  riskScore = Math.max(1, Math.min(100, riskScore));
+
+  const attackProbability = Math.min(97, Math.round(35 + rule.exposure*45 + rule.privilege*15));
+  const blastRadius = estimateBlastRadius(resource, INVENTORY);
+  const businessImpact = riskScore>=85 ? "Critical" : riskScore>=65 ? "High" : riskScore>=40 ? "Moderate" : "Low";
+  const breachLikelihood = attackProbability>=75 ? "High" : attackProbability>=50 ? "Medium" : "Low";
+
+  return {
+    findingId: `${rule.id}::${resource.id}`,
+    ruleId: rule.id,
+    resource, rule,
+    title: rule.name,
+    message: rule.message,
+    severity: rule.severity,
+    provider: resource.provider,
+    riskScore, attackProbability, blastRadius, businessImpact, breachLikelihood,
+  };
+}
+
+/* ---- Module 4: IAM attack path analyzer — real BFS over the IAM graph
+   looking for any path from a user/role node to an admin-tier policy ---- */
+function findEscalationPaths(graph){
+  const adj = {};
+  graph.edges.forEach(e=>{
+    if(!adj[e.from]) adj[e.from]=[];
+    adj[e.from].push(e);
+  });
+  const adminNodes = graph.nodes.filter(n=>n.kind==="policy_admin").map(n=>n.id);
+  const userRoleNodes = graph.nodes.filter(n=>n.kind==="user"||n.kind==="role");
+  const paths = [];
+
+  userRoleNodes.forEach(start=>{
+    const queue = [[start.id]];
+    const seen = new Set([start.id]);
+    while(queue.length){
+      const path = queue.shift();
+      const current = path[path.length-1];
+      if(adminNodes.includes(current) && path.length>1){
+        paths.push(path);
+        continue;
+      }
+      (adj[current]||[]).forEach(edge=>{
+        if(!seen.has(edge.to) || adminNodes.includes(edge.to)){
+          seen.add(edge.to);
+          queue.push([...path, edge.to]);
+        }
+      });
+    }
+  });
+  // de-dupe identical paths
+  const uniq = [];
+  const keys = new Set();
+  paths.forEach(p=>{
+    const k = p.join(">");
+    if(!keys.has(k)){ keys.add(k); uniq.push(p); }
+  });
+  return uniq;
+}
+
+/* ---- Module 5: Terraform static scanner — real regex-based IaC checks ---- */
+const TF_RULES = [
+  { id:"tf-hardcoded-secret", severity:"critical",
+    pattern:/(access_key|secret_key)\s*=\s*"[A-Za-z0-9\/+=]{16,}"/g,
+    message:"Hardcoded AWS credential literal in provider/resource block.",
+    fix:(line)=>line.replace(/"[A-Za-z0-9\/+=]{16,}"/, "null  # inject via TF_VAR_ or a secrets backend, never hardcode") },
+  { id:"tf-s3-public-acl", severity:"critical",
+    pattern:/acl\s*=\s*"public-read(-write)?"/g,
+    message:"S3 bucket ACL is set to a public value.",
+    fix:(line)=>line.replace(/"public-read(-write)?"/, '"private"') },
+  { id:"tf-open-ingress", severity:"critical",
+    pattern:/cidr_blocks\s*=\s*\["0\.0\.0\.0\/0"\]/g,
+    message:"Security group ingress rule is open to the entire internet.",
+    fix:(line)=>line.replace(/\["0\.0\.0\.0\/0"\]/, '["10.0.0.0/16"]  # scope to a real CIDR') },
+  { id:"tf-rds-public", severity:"critical",
+    pattern:/publicly_accessible\s*=\s*true/g,
+    message:"RDS instance is configured as publicly accessible.",
+    fix:(line)=>line.replace(/true/, "false") },
+  { id:"tf-wildcard-iam", severity:"high",
+    pattern:/Action\s*=\s*"\*"/g,
+    message:"IAM policy statement grants wildcard action permissions.",
+    fix:(line)=>line.replace(/"\*"/, '"s3:GetObject"  # scope to the specific actions actually required') },
+  { id:"tf-wildcard-resource", severity:"high",
+    pattern:/Resource\s*=\s*"\*"/g,
+    message:"IAM policy statement grants access to all resources.",
+    fix:(line)=>line.replace(/"\*"/, '"arn:aws:s3:::specific-bucket/*"') },
+  { id:"tf-skip-snapshot", severity:"medium",
+    pattern:/skip_final_snapshot\s*=\s*true/g,
+    message:"Database will be destroyed with no final snapshot on teardown.",
+    fix:(line)=>line.replace(/true/, "false") },
+];
+
+function scanTerraform(source){
+  const lines = source.split("\n");
+  const findings = [];
+  lines.forEach((line, idx)=>{
+    TF_RULES.forEach(rule=>{
+      rule.pattern.lastIndex = 0;
+      if(rule.pattern.test(line)){
+        findings.push({ ...rule, lineNo: idx+1, lineText: line.trim() });
+      }
+    });
+  });
+  return findings;
+}
+
+function generateSecureTerraform(source, findings){
+  const lines = source.split("\n");
+  findings.forEach(f=>{
+    const idx = f.lineNo - 1;
+    lines[idx] = lines[idx].replace(f.lineText.trim(), f.fix(f.lineText).trim());
+  });
+  return lines.join("\n");
+}
+
+
+/* =========================================================================
+   CloudSentinel AI — APP / UI LAYER
+   ========================================================================= */
+
+const FINDINGS = runScan(INVENTORY, RULES);
+const ESCALATION_PATHS = findEscalationPaths(IAM_GRAPH);
+
+const SEV_COLOR = { critical:"var(--red)", high:"var(--amber)", medium:"var(--purple)", low:"var(--cyan)" };
+const SEV_HEX   = { critical:"#f0455c", high:"#f5a623", medium:"#9b6ef3", low:"#38bdf8" };
+
+/* ---------------- Icons (feather-style inline SVG) ---------------- */
+const ICONS = {
+  grid:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+  server:'<rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>',
+  alert:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  activity:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+  check:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  terminal:'<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
+  tool:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  globe:'<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  crosshair:'<circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>',
+  sparkles:'<path d="M12 2.5l1.8 5.7L19.5 10l-5.7 1.8L12 17.5l-1.8-5.7L4.5 10l5.7-1.8L12 2.5z"/>',
+  filetext:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  menu:'<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  chevrondown:'<polyline points="6 9 12 15 18 9"/>',
+  user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  key:'<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>',
+  lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  database:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
+};
+function icon(name, extraClass=""){ return `<svg class="icon ${extraClass}" viewBox="0 0 24 24">${ICONS[name]}</svg>`; }
+
+const NAV_ITEMS = [
+  { id:"overview", label:"Dashboard", icon:"grid" },
+  { id:"inventory", label:"Asset Inventory", icon:"server" },
+  { id:"findings", label:"Misconfigurations", icon:"alert" },
+  { id:"iam", label:"IAM Analyzer", icon:"shield" },
+  { id:"riskengine", label:"Risk Engine", icon:"activity" },
+  { id:"compliance", label:"Compliance", icon:"check" },
+  { id:"terraform", label:"Terraform Scanner", icon:"terminal" },
+  { id:"remediation", label:"Remediation", icon:"tool" },
+  { id:"threatintel", label:"Threat Intelligence", icon:"globe" },
+  { id:"attacksim", label:"Attack Simulation", icon:"crosshair" },
+  { id:"copilot", label:"Security Copilot", icon:"sparkles", badge:"AI" },
+  { id:"reports", label:"Reports", icon:"filetext" },
+  { id:"settings", label:"Settings", icon:"settings" },
+];
+
+const PAGE_META = {
+  overview:{ title:"Dashboard", desc:"Real-time security posture overview" },
+  inventory:{ title:"Asset Inventory", desc:"Module 1 · resources discovered across AWS, Azure & GCP" },
+  findings:{ title:"Misconfigurations", desc:"Module 2 · rule-based scan results across the environment" },
+  iam:{ title:"IAM Attack Path Analyzer", desc:"Module 4 · privilege-escalation graph traversal" },
+  riskengine:{ title:"Risk Engine", desc:"Module 3 · how each finding's score is actually computed" },
+  compliance:{ title:"Compliance Mapping", desc:"Module 9 · frameworks scored from live findings" },
+  terraform:{ title:"Terraform Scanner", desc:"Module 5 · static IaC analysis before it ever gets applied" },
+  remediation:{ title:"Remediation", desc:"Module 6 · generated fixes for every open finding" },
+  threatintel:{ title:"Threat Intelligence", desc:"Module 10 · indicator matching against discovered public IPs" },
+  attacksim:{ title:"Attack Simulation", desc:"Module 12 · scenarios mapped to real detected weaknesses" },
+  copilot:{ title:"Security Copilot", desc:"Module 8 · ask questions, get answers grounded in live scan data" },
+  reports:{ title:"Reports", desc:"Generate an executive summary from the current scan" },
+  settings:{ title:"Settings", desc:"Demo environment configuration" },
+};
+
+let currentView = "overview";
+
+function critCount(sev){ return FINDINGS.filter(f=>f.severity===sev).length; }
+function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* ================= SIDEBAR + TOPBAR ================= */
+function renderSidebar(){
+  const el = document.getElementById("sidebar");
+  el.innerHTML = `
+    <div class="brand">
+      <div class="brand-mark">${icon("shield")}</div>
+      <div><div class="brand-text">CloudSentinel AI</div><div class="brand-sub">CSPM PLATFORM</div></div>
+    </div>
+    <div>
+      ${NAV_ITEMS.map(item=>{
+        let right = "";
+        if(item.badge) right = `<span class="nav-badge">${item.badge}</span>`;
+        else if(item.id==="findings") right = `<span class="nav-count">${FINDINGS.length}</span>`;
+        else if(item.id==="iam") right = `<span class="nav-count">${ESCALATION_PATHS.length}</span>`;
+        return `<div class="nav-item ${item.id===currentView?'active':''}" data-view="${item.id}">
+          ${icon(item.icon)}<span>${item.label}</span>${right}
+        </div>`;
+      }).join("")}
+    </div>
+    <div class="env-box">
+      <div class="env-title">Environment Overview</div>
+      <div class="env-row"><span>Total Accounts</span><b>3</b></div>
+      <div class="env-row"><span>Total Resources</span><b>${INVENTORY.length}</b></div>
+      <div class="env-row"><span>Regions</span><b>${new Set(INVENTORY.map(r=>r.region)).size}</b></div>
+      <div class="env-row"><span>Services Monitored</span><b>${new Set(INVENTORY.map(r=>r.type)).size}</b></div>
+      <div class="env-scan">${icon("check")} Last scan · just now (demo data)</div>
+    </div>
+  `;
+  el.querySelectorAll(".nav-item").forEach(item=>{
+    item.addEventListener("click", ()=>{ currentView = item.dataset.view; renderAll(); window.scrollTo(0,0); });
+  });
+}
+
+function renderTopbar(){
+  const meta = PAGE_META[currentView];
+  const el = document.getElementById("topbar");
+  el.innerHTML = `
+    <div class="topbar-left">
+      <span class="hamburger">${icon("menu")}</span>
+      <div><div class="page-title">${meta.title}</div><div class="page-desc">${meta.desc}</div></div>
+    </div>
+    <div class="topbar-right">
+      <div class="cloud-badge"><span style="width:8px;height:8px;border-radius:50%;background:#f5a623;display:inline-block;"></span>AWS</div>
+      <div class="cloud-badge"><span style="width:8px;height:8px;border-radius:50%;background:#38bdf8;display:inline-block;"></span>Azure</div>
+      <div class="cloud-badge"><span style="width:8px;height:8px;border-radius:50%;background:#35c780;display:inline-block;"></span>GCP</div>
+      <div class="date-select">Last 7 Days ${icon("chevrondown")}</div>
+      <div class="icon-btn">${icon("bell")}</div>
+      <div class="icon-btn">${icon("settings")}</div>
+      <div class="avatar">${icon("user")}</div>
+    </div>
+  `;
+}
+
+/* ================= DASHBOARD (OVERVIEW) ================= */
+function trendArray(base, len=8){
+  const arr=[]; let v=base*0.7;
+  for(let i=0;i<len;i++){ v += (base-v)*0.22 + (Math.sin(i*1.3)*base*0.03); arr.push(Math.round(v)); }
+  arr[arr.length-1]=base;
+  return arr;
+}
+
+function viewOverview(){
+  const total = FINDINGS.length;
+  const avgRisk = Math.round(FINDINGS.reduce((a,f)=>a+f.riskScore,0)/total);
+  const criticalOpen = critCount("critical");
+  const compliancePct = computeFrameworkPct(CIS_CONTROLS);
+  const sevCounts = { critical:critCount("critical"), high:critCount("high"), medium:critCount("medium"), low:critCount("low") };
+  const topPath = ESCALATION_PATHS.slice().sort((a,b)=>b.length-a.length)[0] || [];
+
+  const byType = {};
+  INVENTORY.forEach(r=>{ byType[r.type]=(byType[r.type]||0)+1; });
+  const byProvider = {};
+  INVENTORY.forEach(r=>{ byProvider[r.provider]=(byProvider[r.provider]||0)+1; });
+
+  const misconfigGroups = {};
+  FINDINGS.forEach(f=>{
+    if(!misconfigGroups[f.ruleId]) misconfigGroups[f.ruleId] = { title:f.title, severity:f.severity, count:0 };
+    misconfigGroups[f.ruleId].count++;
+  });
+  const topMisconfigs = Object.values(misconfigGroups).sort((a,b)=>b.count-a.count).slice(0,5);
+
+  const criticalAlerts = FINDINGS.filter(f=>f.severity==="critical").slice(0,5);
+  const topRiskCategory = computeTopRiskCategory();
+
+  return `
+  <div class="dash-grid">
+    <div class="dash-left">
+
+      <div class="metrics-row">
+        ${metricCard("Cloud Risk Score", avgRisk, "/100", "red", "up", `${criticalOpen} critical risk${criticalOpen!==1?'s':''}`, trendArray(avgRisk))}
+        ${metricCard("Total Findings", total, "", "blue", "up", "vs. clean baseline", trendArray(total))}
+        ${metricCard("Critical Findings", criticalOpen, "", "red", "up", "Immediate action required", trendArray(criticalOpen*10))}
+        ${metricCard("Compliance Score", compliancePct, "%", compliancePct>70?"amber":"red", compliancePct>70?"down":"up", "CIS AWS Benchmark", trendArray(compliancePct))}
+        ${metricCard("Assets Monitored", INVENTORY.length, "", "green", "down", "Across 3 clouds", trendArray(INVENTORY.length))}
+      </div>
+
+      <div class="row3">
+        <div class="card">
+          <div class="card-title">Risk by Severity</div>
+          <div class="chart-box" style="height:150px;"><canvas id="chartSeverity"></canvas></div>
+          <div class="legend-list">
+            ${["critical","high","medium","low"].map(s=>`
+              <div class="legend-row">
+                <span class="legend-swatch" style="background:${SEV_HEX[s]}"></span>
+                <span class="lbl" style="text-transform:capitalize;">${s}</span>
+                <span class="cnt">${sevCounts[s]}</span>
+                <span class="pct">${total?Math.round(sevCounts[s]/total*100):0}%</span>
+              </div>`).join("")}
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top Misconfigurations <span class="link-btn" data-goto="findings">View all →</span></div>
+          ${topMisconfigs.map(m=>`
+            <div class="misconfig-row">
+              <div class="misconfig-icon" style="background:${SEV_HEX[m.severity]}22; color:${SEV_HEX[m.severity]}">${icon("alert")}</div>
+              <div class="lbl">${m.title}</div>
+              <div class="misconfig-count">${m.count}</div>
+            </div>`).join("")}
+        </div>
+        <div class="card">
+          <div class="card-title">Risk Trend <span class="date-select" style="padding:3px 8px;">Last 7 Days ${icon("chevrondown")}</span></div>
+          <div class="chart-box"><canvas id="chartTrend"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">IAM Attack Path Analysis <span class="link-btn" data-goto="iam">View full attack path →</span></div>
+        ${topPath.length ? renderMiniFlow(topPath) : `<div class="placeholder-card">No escalation paths detected.</div>`}
+        <div class="risk-factor-row" style="margin-top:14px;">
+          ${riskFactorBox("Unused Permissions","High Risk","amber","key")}
+          ${riskFactorBox("Over-Permissioned","High Risk","amber","key")}
+          ${riskFactorBox("Trust Relationship","Medium Risk","purple","users2")}
+          ${riskFactorBox("Privilege Escalation","Critical Risk","red","alert")}
+        </div>
+      </div>
+
+      <div class="row-resources">
+        <div class="card">
+          <div class="card-title">Resource Distribution</div>
+          <div class="chart-box" style="height:160px;"><canvas id="chartResType"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Resources by Cloud</div>
+          <div class="chart-box" style="height:160px;"><canvas id="chartResCloud"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Recent Activity <span class="link-btn" data-goto="reports">View all →</span></div>
+          ${recentActivityRows()}
+        </div>
+      </div>
+
+    </div>
+
+    <div class="dash-right">
+      <div class="card">
+        <div class="card-title">Critical Alerts <span class="link-btn" data-goto="findings">View all →</span></div>
+        ${criticalAlerts.map((f,i)=>`
+          <div class="alert-card">
+            <div class="alert-icon" style="background:${SEV_HEX[f.severity]}22; color:${SEV_HEX[f.severity]}">${icon("alert")}</div>
+            <div style="flex:1;">
+              <div class="alert-title">${f.title}</div>
+              <div class="alert-sub">${f.resource.name}</div>
+              <div class="alert-time">${(i+1)*7} mins ago</div>
+            </div>
+            <span class="badge ${f.severity} alert-badge">${f.severity}</span>
+          </div>`).join("")}
+      </div>
+
+      <div class="ai-insight-card">
+        <div class="ai-badge">${icon("sparkles")} AI Security Insights</div>
+        <div class="ai-headline">${criticalOpen>0?'High Risk Detected':'Environment Stable'}</div>
+        <div class="ai-body">Your environment has ${criticalOpen} critical finding${criticalOpen!==1?'s':''} with an average attack probability of ${Math.round(FINDINGS.reduce((a,f)=>a+f.attackProbability,0)/total)}%.</div>
+        <div class="ai-factor">Top risk factor<b>${topRiskCategory}</b></div>
+        <button class="btn ai-btn" data-goto="iam">View Attack Paths</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Compliance Summary <span class="link-btn" data-goto="compliance">View all →</span></div>
+        ${complianceSummaryRows()}
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+function metricCard(label, value, suffix, color, trendDir, caption, spark){
+  const id = "spark_"+label.replace(/\s+/g,"");
+  return `
+  <div class="card metric-card">
+    <div class="metric-label">${label}</div>
+    <div class="metric-row">
+      <div class="metric-val ${color}">${value}<span style="font-size:13px;color:var(--text-dim);">${suffix}</span></div>
+      <div class="metric-trend ${trendDir}">${trendDir==="up"?"▲":"▼"} ${Math.abs(Math.round((spark[spark.length-1]-spark[0])/(spark[0]||1)*100))}%</div>
+    </div>
+    <div class="metric-caption">${caption}</div>
+    <div class="spark"><canvas id="${id}"></canvas></div>
+  </div>`;
+}
+
+function riskFactorBox(label, level, color, iconName){
+  const colorMap = { amber:"var(--amber)", red:"var(--red)", purple:"var(--purple)" };
+  return `<div class="risk-factor">
+    <div class="rf-icon" style="background:${colorMap[color]}22; color:${colorMap[color]}">${icon(iconName==="users2"?"user":iconName)}</div>
+    <div><div class="rf-label">${label}</div><div class="rf-level" style="color:${colorMap[color]}">${level}</div></div>
+  </div>`;
+}
+
+function renderMiniFlow(path){
+  const kindOf = (id)=> (IAM_GRAPH.nodes.find(n=>n.id===id)||{}).kind || "policy";
+  const kindColor = { user:"#38bdf8", role:"#35c780", policy:"#9b6ef3", policy_admin:"#f0455c" };
+  const kindLabel = { user:"User", role:"Role", policy:"Policy", policy_admin:"Admin Access" };
+  return `<div class="iam-flow">
+    ${path.map((nodeId,i)=>{
+      const node = IAM_GRAPH.nodes.find(n=>n.id===nodeId);
+      const kind = kindOf(nodeId);
+      const c = kindColor[kind];
+      const arrow = i<path.length-1 ? `<span class="flow-arrow">${icon("chevrondown")}</span>` : "";
+      return `<div class="flow-node" style="border-color:${c}55;">
+        <div class="fn-icon" style="background:${c}22; color:${c}">${icon(kind==="user"?"user":kind==="role"?"shield":kind==="policy_admin"?"alert":"key")}</div>
+        <div class="fn-label">${kindLabel[kind]}</div>
+        <div class="fn-val">${node.label}</div>
+      </div>${arrow}`;
+    }).join("")}
+  </div>`;
+}
+
+function recentActivityRows(){
+  const rows = [
+    { icon:"check", color:"var(--green)", title:"Scan completed for AWS account sample-org-prod", sub:`${FINDINGS.length} findings identified`, time:"2 mins ago" },
+    { icon:"alert", color:"var(--red)", title:"New finding detected: public S3 bucket", sub:INVENTORY.find(r=>r.type==="S3").name, time:"10 mins ago" },
+    { icon:"shield", color:"var(--purple)", title:"IAM policy change detected", sub:"AdministratorAccess attached directly", time:"15 mins ago" },
+    { icon:"alert", color:"var(--amber)", title:"Security group modified", sub:"default — allow-all ingress", time:"20 mins ago" },
+  ];
+  return rows.map(r=>`
+    <div class="activity-row">
+      <div class="activity-icon" style="background:${r.color}22; color:${r.color}">${icon(r.icon)}</div>
+      <div><div class="activity-title">${r.title}</div><div class="activity-sub">${r.sub}</div></div>
+      <div class="activity-time">${r.time}</div>
+    </div>`).join("");
+}
+
+function computeFrameworkPct(controls){
+  const total = controls.length;
+  const failing = controls.filter(c=>c.ruleIds.some(rid=>FINDINGS.some(f=>f.ruleId===rid))).length;
+  return Math.round(((total-failing)/total)*100);
+}
+
+function complianceSummaryRows(){
+  const frameworks = [
+    { label:"CIS AWS Benchmark", controls:CIS_CONTROLS },
+    { label:"NIST 800-53", controls:NIST_CONTROLS },
+    { label:"PCI DSS 4.0", controls:PCI_CONTROLS },
+    { label:"ISO 27001", controls:ISO_CONTROLS },
+    { label:"CSA CCM", controls:CSA_CONTROLS },
+  ];
+  return frameworks.map(fw=>{
+    const pct = computeFrameworkPct(fw.controls);
+    const color = pct>=70?"var(--green)":pct>=50?"var(--amber)":"var(--red)";
+    return `<div class="compliance-row">
+      <div class="compliance-head"><b>${fw.label}</b><span class="pct">${pct}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color};"></div></div>
+    </div>`;
+  }).join("");
+}
+
+function computeTopRiskCategory(){
+  const categoryOf = (ruleId)=>{
+    if(["open-ssh","default-sg-open","eks-public-endpoint","s3-public-read","rds-public","azure-public-blob","gcp-allusers-viewer"].includes(ruleId)) return "Network & Public Exposure";
+    if(["direct-admin-policy","old-access-key","mfa-disabled"].includes(ruleId)) return "IAM Privilege Escalation";
+    if(["s3-unencrypted","rds-unencrypted","ebs-unencrypted","kms-rotation-disabled","snapshot-public-unencrypted"].includes(ruleId)) return "Encryption Gaps";
+    return "Logging & Monitoring Gaps";
+  };
+  const tally = {};
+  FINDINGS.forEach(f=>{ const c=categoryOf(f.ruleId); tally[c]=(tally[c]||0)+f.riskScore; });
+  return Object.entries(tally).sort((a,b)=>b[1]-a[1])[0][0];
+}
+
+function mountOverviewCharts(){
+  const sevCounts = ["critical","high","medium","low"].map(critCount);
+  new Chart(document.getElementById("chartSeverity"), {
+    type:"doughnut",
+    data:{ labels:["Critical","High","Medium","Low"], datasets:[{ data:sevCounts, backgroundColor:[SEV_HEX.critical,SEV_HEX.high,SEV_HEX.medium,SEV_HEX.low], borderWidth:0 }]},
+    options:{ plugins:{legend:{display:false}}, cutout:"70%" }
+  });
+
+  const trendData = trendArray(Math.round(FINDINGS.reduce((a,f)=>a+f.riskScore,0)/FINDINGS.length), 10);
+  new Chart(document.getElementById("chartTrend"), {
+    type:"line",
+    data:{ labels:trendData.map((_,i)=>`D-${trendData.length-1-i}`), datasets:[{ data:trendData, borderColor:"#f0455c", backgroundColor:"rgba(240,69,92,0.12)", fill:true, tension:0.35, pointRadius:0, borderWidth:2 }]},
+    options:{ plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:"#6b7794", font:{size:9}}, grid:{color:"#1f2c44"}}, y:{ticks:{color:"#6b7794", font:{size:9}}, grid:{color:"#1f2c44"}} } }
+  });
+
+  const byType = {}; INVENTORY.forEach(r=>{ byType[r.type]=(byType[r.type]||0)+1; });
+  new Chart(document.getElementById("chartResType"), {
+    type:"doughnut",
+    data:{ labels:Object.keys(byType), datasets:[{ data:Object.values(byType), backgroundColor:["#4f7cff","#f5a623","#9b6ef3","#35c780","#f0455c","#38bdf8","#6b7794"], borderWidth:0 }]},
+    options:{ plugins:{legend:{position:"right", labels:{color:"#c3cbe0", font:{size:9}, boxWidth:8}}}, cutout:"60%" }
+  });
+
+  const byProvider = {}; INVENTORY.forEach(r=>{ byProvider[r.provider]=(byProvider[r.provider]||0)+1; });
+  new Chart(document.getElementById("chartResCloud"), {
+    type:"doughnut",
+    data:{ labels:Object.keys(byProvider), datasets:[{ data:Object.values(byProvider), backgroundColor:["#f5a623","#38bdf8","#35c780"], borderWidth:0 }]},
+    options:{ plugins:{legend:{position:"right", labels:{color:"#c3cbe0", font:{size:9}, boxWidth:8}}}, cutout:"60%" }
+  });
+
+  // sparklines
+  const sparks = [
+    ["Cloud RiskScore".replace(/\s+/g,""), trendArray(Math.round(FINDINGS.reduce((a,f)=>a+f.riskScore,0)/FINDINGS.length)), "#f0455c"],
+  ];
+  document.querySelectorAll('[id^="spark_"]').forEach((canvas, i)=>{
+    const labels = ["CloudRiskScore","TotalFindings","CriticalFindings","ComplianceScore","AssetsMonitored"];
+    const bases = [Math.round(FINDINGS.reduce((a,f)=>a+f.riskScore,0)/FINDINGS.length), FINDINGS.length, critCount("critical")*8, computeFrameworkPct(CIS_CONTROLS), INVENTORY.length];
+    const colors = ["#f0455c","#4f7cff","#f0455c","#f5a623","#35c780"];
+    const data = trendArray(bases[i]||10);
+    new Chart(canvas, {
+      type:"line",
+      data:{ labels:data.map((_,x)=>x), datasets:[{ data, borderColor:colors[i]||"#4f7cff", borderWidth:2, pointRadius:0, tension:0.4, fill:false }]},
+      options:{ plugins:{legend:{display:false}}, scales:{ x:{display:false}, y:{display:false} }, elements:{line:{borderJoinStyle:"round"}} }
+    });
+  });
+
+  document.querySelectorAll("[data-goto]").forEach(el=>{
+    el.addEventListener("click", ()=>{ currentView = el.dataset.goto; renderAll(); });
+  });
+}
+
+/* ================= INVENTORY ================= */
+function viewInventory(){
+  return `
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Resource</th><th>Type</th><th>Provider</th><th>Region</th><th>Criticality</th><th>Findings</th></tr></thead>
+      <tbody>
+        ${INVENTORY.map(r=>{
+          const fc = FINDINGS.filter(f=>f.resource.id===r.id).length;
+          return `<tr>
+            <td class="mono-sm">${r.name}</td>
+            <td><span class="pill">${r.type}</span></td>
+            <td>${r.provider}</td>
+            <td class="mono-sm">${r.region}</td>
+            <td><span class="badge ${r.criticality}">${r.criticality}</span></td>
+            <td>${fc>0?`<span class="badge high">${fc} finding${fc>1?'s':''}</span>`:`<span class="badge pass">clean</span>`}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+  </div>
+  <div class="footnote">Inventory is simulated sample data standing in for a live AWS/Azure/GCP connection — there's no live cloud credential wired into this environment. Every check downstream of this table runs real logic against it.</div>
+  `;
+}
+
+/* ================= FINDINGS ================= */
+function viewFindings(){
+  return `
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Severity</th><th>Finding</th><th>Resource</th><th>Risk Score</th><th>Attack Prob.</th><th>Business Impact</th></tr></thead>
+      <tbody>
+        ${FINDINGS.map(f=>`
+          <tr class="finding-row" data-fid="${f.findingId}" style="cursor:pointer;">
+            <td><span class="badge ${f.severity}">${f.severity}</span></td>
+            <td>${f.title}</td>
+            <td class="mono-sm">${f.resource.name}</td>
+            <td><b style="color:${SEV_HEX[f.severity]}">${f.riskScore}</b></td>
+            <td>${f.attackProbability}%</td>
+            <td>${f.businessImpact}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table>
+  </div>
+  <div id="findingDetail" class="detail-panel"></div>
+  `;
+}
+
+function renderFindingDetail(findingId){
+  const f = FINDINGS.find(x=>x.findingId===findingId);
+  const panel = document.getElementById("findingDetail");
+  const rem = f.rule.remediation(f.resource);
+  panel.innerHTML = `
+    <div class="detail-grid">
+      <div>
+        <div class="card-title">Finding Detail</div>
+        <div class="kv"><span>Resource</span><span class="mono-sm">${f.resource.name} (${f.resource.type})</span></div>
+        <div class="kv"><span>Provider / Region</span><span>${f.resource.provider} · ${f.resource.region}</span></div>
+        <div class="kv"><span>Severity</span><span class="badge ${f.severity}">${f.severity}</span></div>
+        <div class="kv"><span>Risk Score</span><span style="color:${SEV_HEX[f.severity]}">${f.riskScore}/100</span></div>
+        <div class="kv"><span>Attack Probability</span><span>${f.attackProbability}%</span></div>
+        <div class="kv"><span>Estimated Blast Radius</span><span>${f.blastRadius} resources</span></div>
+        <div class="kv"><span>Breach Likelihood</span><span>${f.breachLikelihood}</span></div>
+        <div class="kv"><span>Business Impact</span><span>${f.businessImpact}</span></div>
+        <p style="margin-top:12px; font-size:12.5px; color:var(--text);">${f.message}</p>
+      </div>
+      <div>
+        <div class="card-title">AI Remediation Generator</div>
+        <div class="code-tabs">
+          <div class="code-tab active" data-tab="cli">AWS CLI</div>
+          <div class="code-tab" data-tab="terraform">Terraform</div>
+          <div class="code-tab" data-tab="boto3">boto3</div>
+        </div>
+        <div class="code-block" id="remCode">${escapeHtml(rem.cli)}</div>
+        <p style="font-size:11px; color:var(--text-dim); margin-top:8px;"><b style="color:var(--amber)">Rollback:</b> ${rem.rollback}</p>
+      </div>
+    </div>
+  `;
+  panel.classList.add("show");
+  panel.querySelectorAll(".code-tab").forEach(tab=>{
+    tab.addEventListener("click", ()=>{
+      panel.querySelectorAll(".code-tab").forEach(t=>t.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("remCode").textContent = rem[tab.dataset.tab];
+    });
+  });
+}
+
+/* ================= IAM ANALYZER ================= */
+function viewIAM(){
+  return `
+  <div class="row3" style="grid-template-columns:1.3fr 1fr;">
+    <div class="card">
+      <div class="card-title">Identity Graph</div>
+      <div style="display:flex; gap:16px; font-size:11px; color:var(--text-dim); margin-bottom:10px;">
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#38bdf8;margin-right:5px;"></span>User</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#35c780;margin-right:5px;"></span>Role</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#6b7794;margin-right:5px;"></span>Policy</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#f0455c;margin-right:5px;"></span>Admin-tier policy</span>
+      </div>
+      <div id="iamGraphSvg"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Detected Escalation Paths</div>
+      ${ESCALATION_PATHS.map(p=>`
+        <div style="padding:10px 0; border-bottom:1px solid var(--border); font-size:12px;">
+          ${p.map((n,i)=>`<span class="mono-sm" style="color:${i===p.length-1?'var(--red)':'var(--text)'}">${n}</span>${i<p.length-1?' <span style="color:var(--text-dim)">→</span> ':''}`).join("")}
+        </div>
+      `).join("")}
+      <p style="font-size:11px; color:var(--text-dim); margin-top:10px;">Each path is a real chain an attacker who compromises the starting identity could walk to reach full administrative control — via direct policy attachment, AssumeRole, or PassRole abuse.</p>
+    </div>
+  </div>
+  `;
+}
+
+function renderIamGraph(){
+  const container = document.getElementById("iamGraphSvg");
+  if(!container) return;
+  const width = container.clientWidth || 480, height = 340;
+  const tiers = { user:[], role:[], policy:[], policy_admin:[] };
+  IAM_GRAPH.nodes.forEach(n=> tiers[n.kind].push(n));
+
+  const colX = { user:70, role:width/2, policy:width-90, policy_admin:width-90 };
+  const positions = {};
+  ["user","role"].forEach(kind=>{
+    tiers[kind].forEach((n,i)=>{
+      positions[n.id] = { x: colX[kind], y: 40 + i*(height-80)/Math.max(1,tiers[kind].length-1||1) };
+    });
+  });
+  const policyNodes = [...tiers.policy, ...tiers.policy_admin];
+  policyNodes.forEach((n,i)=>{
+    positions[n.id] = { x: colX.policy, y: 30 + i*(height-60)/Math.max(1,policyNodes.length-1) };
+  });
+
+  const escalationEdgeKeys = new Set();
+  ESCALATION_PATHS.forEach(p=>{ for(let i=0;i<p.length-1;i++) escalationEdgeKeys.add(p[i]+">"+p[i+1]); });
+  const kindColor = { user:"#38bdf8", role:"#9b6ef3", policy:"#6b7794", policy_admin:"#f0455c" };
+
+  let svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}">`;
+  IAM_GRAPH.edges.forEach(e=>{
+    const a = positions[e.from], b = positions[e.to];
+    if(!a||!b) return;
+    const hot = escalationEdgeKeys.has(e.from+">"+e.to);
+    svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${hot?'#f0455c':'#243252'}" stroke-width="${hot?2:1.2}" ${hot?'stroke-dasharray="5,3"':''} />`;
+  });
+  IAM_GRAPH.nodes.forEach(n=>{
+    const p = positions[n.id]; if(!p) return;
+    const r = n.kind==="policy_admin" ? 9 : 7;
+    svg += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${kindColor[n.kind]}" stroke="#0a0f1d" stroke-width="2"/>`;
+    const anchor = p.x > width-120 ? "end" : "start";
+    const dx = p.x > width-120 ? -12 : 12;
+    svg += `<text x="${p.x+dx}" y="${p.y+4}" font-size="10" font-family="JetBrains Mono" fill="#c3cbe0" text-anchor="${anchor}">${n.label}</text>`;
+  });
+  svg += `</svg>`;
+  container.innerHTML = svg;
+}
+
+/* ================= RISK ENGINE ================= */
+function viewRiskEngine(){
+  const buckets = [
+    { label:"90-100", count:FINDINGS.filter(f=>f.riskScore>=90).length },
+    { label:"70-89", count:FINDINGS.filter(f=>f.riskScore>=70 && f.riskScore<90).length },
+    { label:"50-69", count:FINDINGS.filter(f=>f.riskScore>=50 && f.riskScore<70).length },
+    { label:"< 50", count:FINDINGS.filter(f=>f.riskScore<50).length },
+  ];
+  return `
+  <div class="row3" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="card">
+      <div class="card-title">Scoring Formula</div>
+      <p style="font-size:12px; line-height:1.7;">
+        <span class="mono-sm">score = (severity_base + exposure×22 + privilege×14 + sensitivity×14) × criticality_multiplier</span>
+      </p>
+      <div class="footnote" style="margin-top:14px;">
+        <b>severity_base</b>: 78 / 58 / 38 / 20 for critical / high / medium / low<br>
+        <b>exposure</b>: 0–1, how internet-reachable the misconfiguration is<br>
+        <b>privilege</b>: 0–1, IAM/administrative impact if exploited<br>
+        <b>sensitivity</b>: 0–1, classification of data or systems affected<br>
+        <b>criticality_multiplier</b>: 0.85–1.25 based on the resource's business criticality tag
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Score Distribution</div>
+      <div class="chart-box"><canvas id="chartRiskDist"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Blast Radius Estimate</div>
+      <p style="font-size:12px; color:var(--text);">Blast radius counts co-located resources (same region or same provider) as a proxy for how far a compromise could spread from this resource.</p>
+      <div class="table-wrap" style="max-height:220px; margin-top:10px;">
+        <table><thead><tr><th>Resource</th><th>Blast Radius</th></tr></thead>
+        <tbody>${FINDINGS.slice(0,6).map(f=>`<tr><td class="mono-sm">${f.resource.name}</td><td>${f.blastRadius}</td></tr>`).join("")}</tbody></table>
+      </div>
+    </div>
+  </div>
+  `;
+}
+function mountRiskEngineCharts(){
+  const buckets = [
+    FINDINGS.filter(f=>f.riskScore>=90).length,
+    FINDINGS.filter(f=>f.riskScore>=70 && f.riskScore<90).length,
+    FINDINGS.filter(f=>f.riskScore>=50 && f.riskScore<70).length,
+    FINDINGS.filter(f=>f.riskScore<50).length,
+  ];
+  new Chart(document.getElementById("chartRiskDist"), {
+    type:"bar",
+    data:{ labels:["90-100","70-89","50-69","<50"], datasets:[{ data:buckets, backgroundColor:["#f0455c","#f5a623","#9b6ef3","#38bdf8"], borderRadius:6, maxBarThickness:44 }]},
+    options:{ plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:"#c3cbe0"}, grid:{display:false}}, y:{ticks:{color:"#6b7794"}, grid:{color:"#1f2c44"}} } }
+  });
+}
+
+/* ================= COMPLIANCE ================= */
+function viewCompliance(){
+  const frameworks = [
+    { label:"CIS AWS Foundations Benchmark", controls:CIS_CONTROLS },
+    { label:"NIST 800-53", controls:NIST_CONTROLS },
+    { label:"PCI DSS 4.0", controls:PCI_CONTROLS },
+    { label:"ISO 27001", controls:ISO_CONTROLS },
+    { label:"CSA CCM", controls:CSA_CONTROLS },
+  ];
+  return frameworks.map(fw=>{
+    const pct = computeFrameworkPct(fw.controls);
+    const rows = fw.controls.map(c=>{
+      const failingFindings = FINDINGS.filter(f=>c.ruleIds.includes(f.ruleId));
+      const status = failingFindings.length>0 ? "fail" : "pass";
+      return { c, status, failingFindings };
+    });
+    return `
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">${fw.label} <span class="pill">${pct}% compliant</span></div>
+      <table>
+        <thead><tr><th>Control</th><th>Description</th><th>Status</th><th>Linked Findings</th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`
+            <tr>
+              <td class="mono-sm">${r.c.id}</td>
+              <td>${r.c.desc}</td>
+              <td><span class="badge ${r.status}">${r.status}</span></td>
+              <td>${r.failingFindings.map(f=>`<span class="pill">${f.resource.name}</span>`).join(" ") || "—"}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`;
+  }).join("");
+}
+
+/* ================= TERRAFORM SCANNER ================= */
+function viewTerraform(){
+  return `
+  <div class="row3" style="grid-template-columns:1fr 1fr;">
+    <div class="card">
+      <div class="card-title">Paste Terraform<span class="link-btn" id="loadSample">load sample vulnerable config</span></div>
+      <textarea id="tfInput" rows="20" spellcheck="false">${SAMPLE_TF}</textarea>
+      <div style="margin-top:10px;"><button class="btn" id="runTfScan">Run Scan</button></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Findings</div>
+      <div id="tfFindings" style="font-size:12px; color:var(--text-dim);">Run a scan to see results.</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px; display:none;" id="tfFixedCard">
+    <div class="card-title">Auto-Generated Secure Version</div>
+    <div class="code-block" id="tfFixed"></div>
+  </div>
+  `;
+}
+function wireTerraformView(){
+  document.getElementById("loadSample").addEventListener("click", ()=>{
+    document.getElementById("tfInput").value = SAMPLE_TF;
+  });
+  document.getElementById("runTfScan").addEventListener("click", ()=>{
+    const src = document.getElementById("tfInput").value;
+    const findings = scanTerraform(src);
+    const box = document.getElementById("tfFindings");
+    if(findings.length===0){
+      box.innerHTML = `<span class="badge pass">No issues found</span>`;
+      document.getElementById("tfFixedCard").style.display="none";
+      return;
+    }
+    box.innerHTML = findings.map(f=>`
+      <div style="padding:9px 0; border-bottom:1px solid var(--border);">
+        <span class="badge ${f.severity}">${f.severity}</span>
+        <span style="margin-left:8px; font-size:12px;">${f.message}</span>
+        <div class="mono-sm" style="margin-top:4px;">line ${f.lineNo}: ${escapeHtml(f.lineText)}</div>
+      </div>
+    `).join("");
+    const fixed = generateSecureTerraform(src, findings);
+    document.getElementById("tfFixed").textContent = fixed;
+    document.getElementById("tfFixedCard").style.display="block";
+  });
+}
+
+/* ================= REMEDIATION (aggregate) ================= */
+function viewRemediation(){
+  return FINDINGS.map(f=>{
+    const rem = f.rule.remediation(f.resource);
+    return `
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title"><span class="badge ${f.severity}">${f.severity}</span>&nbsp; ${f.title} <span class="mono-sm">— ${f.resource.name}</span></div>
+      <div class="code-block">${escapeHtml(rem.cli)}</div>
+      <p style="font-size:11px; color:var(--text-dim); margin-top:8px;"><b style="color:var(--amber)">Rollback:</b> ${rem.rollback}</p>
+    </div>`;
+  }).join("");
+}
+
+/* ================= THREAT INTELLIGENCE ================= */
+function viewThreatIntel(){
+  const publicIps = INVENTORY.filter(r=>r.publicIp).map(r=>({resource:r.name, ip:r.publicIp}));
+  const matches = [];
+  publicIps.forEach(p=>{
+    const hit = THREAT_INTEL_IOCS.find(ioc=>ioc.ip===p.ip);
+    if(hit) matches.push({ ...p, ...hit });
+  });
+  return `
+  <div class="card">
+    <div class="card-title">Public IP Indicator Match</div>
+    <p style="font-size:12px; color:var(--text-dim);">Checks every discovered public IP against a small sample indicator list (not a live threat feed) to demonstrate real match logic.</p>
+    <div class="table-wrap" style="margin-top:12px;">
+      <table>
+        <thead><tr><th>Resource</th><th>Public IP</th><th>Match</th></tr></thead>
+        <tbody>
+          ${publicIps.map(p=>{
+            const hit = THREAT_INTEL_IOCS.find(ioc=>ioc.ip===p.ip);
+            return `<tr>
+              <td class="mono-sm">${p.resource}</td>
+              <td class="mono-sm">${p.ip}</td>
+              <td>${hit?`<span class="badge fail">${hit.type} (${hit.confidence})</span>`:`<span class="badge pass">no match</span>`}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px;">
+    <div class="card-title">Sample Indicator List</div>
+    <table>
+      <thead><tr><th>Indicator</th><th>Type</th><th>Confidence</th></tr></thead>
+      <tbody>${THREAT_INTEL_IOCS.map(ioc=>`<tr><td class="mono-sm">${ioc.ip}</td><td>${ioc.type}</td><td>${ioc.confidence}</td></tr>`).join("")}</tbody>
+    </table>
+  </div>
+  `;
+}
+
+/* ================= ATTACK SIMULATION (mapped, not live) ================= */
+function viewAttackSim(){
+  const scenarios = [
+    { name:"S3 Data Theft", mapsTo:["s3-public-read","snapshot-public-unencrypted"] },
+    { name:"Credential Theft", mapsTo:["lambda-hardcoded-secret","old-access-key"] },
+    { name:"Privilege Escalation", mapsTo:["direct-admin-policy"] },
+    { name:"Insider Attack", mapsTo:["mfa-disabled","direct-admin-policy"] },
+    { name:"Crypto Mining via Compute", mapsTo:["open-ssh","eks-public-endpoint"] },
+    { name:"Ransomware Blast Radius", mapsTo:["rds-unencrypted","ebs-unencrypted"] },
+  ];
+  return `
+  <div class="footnote" style="margin-bottom:14px; border-top:none;">This view maps attack scenarios to findings your scan actually detected, rather than running a live penetration-test simulator.</div>
+  <div class="row-resources" style="grid-template-columns:repeat(3,1fr);">
+    ${scenarios.map(s=>{
+      const linked = FINDINGS.filter(f=>s.mapsTo.includes(f.ruleId));
+      return `<div class="card">
+        <div class="card-title">${s.name}</div>
+        ${linked.length ? linked.map(f=>`<div class="misconfig-row"><div class="misconfig-icon" style="background:${SEV_HEX[f.severity]}22;color:${SEV_HEX[f.severity]}">${icon("crosshair")}</div><div class="lbl">${f.resource.name}</div><span class="badge ${f.severity}">${f.severity}</span></div>`).join("")
+          : `<p style="font-size:11.5px; color:var(--text-dim);">No matching findings currently open for this scenario.</p>`}
+      </div>`;
+    }).join("")}
+  </div>
+  `;
+}
+
+/* ================= REPORTS ================= */
+function buildReportText(){
+  const pct = computeFrameworkPct(CIS_CONTROLS);
+  const lines = [];
+  lines.push("CLOUDSENTINEL AI — EXECUTIVE SECURITY REPORT");
+  lines.push("Generated: " + new Date().toString());
+  lines.push("");
+  lines.push(`Overall risk score: ${Math.round(FINDINGS.reduce((a,f)=>a+f.riskScore,0)/FINDINGS.length)}/100`);
+  lines.push(`Total findings: ${FINDINGS.length} (Critical: ${critCount("critical")}, High: ${critCount("high")}, Medium: ${critCount("medium")}, Low: ${critCount("low")})`);
+  lines.push(`CIS AWS compliance: ${pct}%`);
+  lines.push(`IAM escalation paths detected: ${ESCALATION_PATHS.length}`);
+  lines.push("");
+  lines.push("TOP FINDINGS:");
+  FINDINGS.slice(0,10).forEach(f=>{
+    lines.push(`  [${f.severity.toUpperCase()}] ${f.title} — ${f.resource.name} — risk ${f.riskScore}/100`);
+  });
+  lines.push("");
+  lines.push("IAM ESCALATION PATHS:");
+  ESCALATION_PATHS.forEach(p=> lines.push("  " + p.join(" -> ")));
+  return lines.join("\n");
+}
+function viewReports(){
+  return `
+  <div class="card">
+    <div class="card-title">Executive Summary Report</div>
+    <p style="font-size:12px; color:var(--text-dim);">Generates a plain-text report from the current live scan state — findings, risk scores, compliance percentage, and IAM escalation paths.</p>
+    <div style="margin-top:12px;"><button class="btn" id="genReport">Generate & Download Report</button></div>
+    <div class="code-block" id="reportPreview" style="margin-top:14px; max-height:300px; overflow:auto;"></div>
+  </div>
+  `;
+}
+function wireReportsView(){
+  document.getElementById("genReport").addEventListener("click", ()=>{
+    const text = buildReportText();
+    document.getElementById("reportPreview").textContent = text;
+    const blob = new Blob([text], {type:"text/plain"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "cloudsentinel-executive-report.txt";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+}
+
+/* ================= SETTINGS (demo placeholder) ================= */
+function viewSettings(){
+  return `
+  <div class="card">
+    <div class="card-title">Demo Environment Settings</div>
+    <p style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">These controls are illustrative in this build — wiring them to real scan configuration (schedule, regions, connected accounts) is the natural next step for a production version.</p>
+    ${["Scan frequency: every 6 hours","Regions monitored: ap-south-1, centralindia, asia-south1","Connected accounts: 3 (AWS, Azure, GCP)","Slack/webhook alerting: not configured"].map(t=>`
+      <div class="env-row" style="border-bottom:1px solid var(--border); padding:10px 0;"><span>${t}</span></div>
+    `).join("")}
+  </div>
+  `;
+}
+
+/* ================= AI COPILOT (live Claude API call) ================= */
+function viewCopilot(){
+  return `
+  <div class="copilot-shell">
+    <div class="copilot-msgs" id="copilotMsgs">
+      <div class="msg sys">Copilot has context on ${FINDINGS.length} findings, ${ESCALATION_PATHS.length} IAM escalation paths, and compliance state across 5 frameworks.</div>
+      <div class="msg ai">Hi — I'm the CloudSentinel copilot. Ask me things like "what's my riskiest finding" or "how do I fix the S3 bucket exposure", and I'll answer from the live scan data.</div>
+    </div>
+    <div style="padding:0 14px 10px; display:flex; gap:8px; flex-wrap:wrap;">
+      <div class="suggestion-chip" data-q="What is my single riskiest finding right now and why?">riskiest finding?</div>
+      <div class="suggestion-chip" data-q="Explain the IAM privilege escalation paths in plain English.">explain IAM paths</div>
+      <div class="suggestion-chip" data-q="Which findings are blocking CIS compliance and how do I fix them fastest?">fix compliance fastest</div>
+      <div class="suggestion-chip" data-q="Give me a prioritized remediation plan for this week.">prioritize remediation</div>
+    </div>
+    <div class="copilot-input">
+      <input id="copilotInput" placeholder="Ask about findings, IAM paths, remediation, compliance...">
+      <button class="btn" id="copilotSend">Send</button>
+    </div>
+  </div>
+  <div class="footnote">This calls the live Anthropic API (Claude) with the current scan state as context. If it can't reach the API in your environment, it'll say so rather than fabricate an answer.</div>
+  `;
+}
+function buildCopilotContext(){
+  return JSON.stringify({
+    total_findings: FINDINGS.length,
+    findings_summary: FINDINGS.map(f=>({ title:f.title, resource:f.resource.name, severity:f.severity, riskScore:f.riskScore, attackProbability:f.attackProbability, businessImpact:f.businessImpact })),
+    iam_escalation_paths: ESCALATION_PATHS,
+    compliance_pct: computeFrameworkPct(CIS_CONTROLS),
+  });
+}
+function addMsg(role, text){
+  const box = document.getElementById("copilotMsgs");
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+async function askCopilot(question){
+  addMsg("user", question);
+  const box = document.getElementById("copilotMsgs");
+  const typingDiv = document.createElement("div");
+  typingDiv.className = "msg ai";
+  typingDiv.innerHTML = `<span class="typing"><span></span><span></span><span></span></span>`;
+  box.appendChild(typingDiv);
+  box.scrollTop = box.scrollHeight;
+  const sendBtn = document.getElementById("copilotSend");
+  if(sendBtn) sendBtn.disabled = true;
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: "You are the CloudSentinel AI security copilot, embedded in a CSPM dashboard. Answer the analyst's question using ONLY the JSON scan context provided in the user message. Be specific: cite exact resource names, risk scores, and finding titles from the context. Keep answers tight — a short paragraph or a compact bulleted list, security-engineer tone, no fluff.",
+        messages: [ { role: "user", content: `Scan context (JSON):\n${buildCopilotContext()}\n\nQuestion: ${question}` } ]
+      })
+    });
+    const data = await response.json();
+    const textBlocks = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
+    typingDiv.remove();
+    addMsg("ai", textBlocks || "The API returned no text content for this question.");
+  } catch(err){
+    typingDiv.remove();
+    addMsg("ai", "I couldn't reach the Claude API from this environment (" + err.message + "). This copilot is wired for a live call — when the origin has network access to api.anthropic.com, it will answer directly from the scan context above instead of a canned response.");
+  } finally {
+    if(sendBtn) sendBtn.disabled = false;
+  }
+}
+function wireCopilotView(){
+  document.getElementById("copilotSend").addEventListener("click", ()=>{
+    const input = document.getElementById("copilotInput");
+    const q = input.value.trim();
+    if(!q) return;
+    input.value = "";
+    askCopilot(q);
+  });
+  document.getElementById("copilotInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ document.getElementById("copilotSend").click(); } });
+  document.querySelectorAll(".suggestion-chip").forEach(chip=>{ chip.addEventListener("click", ()=> askCopilot(chip.dataset.q)); });
+}
+
+/* ================= ROUTER ================= */
+const VIEW_BUILDERS = {
+  overview: viewOverview, inventory: viewInventory, findings: viewFindings,
+  iam: viewIAM, riskengine: viewRiskEngine, compliance: viewCompliance,
+  terraform: viewTerraform, remediation: viewRemediation, threatintel: viewThreatIntel,
+  attacksim: viewAttackSim, copilot: viewCopilot, reports: viewReports, settings: viewSettings,
+};
+
+function renderAll(){
+  renderSidebar();
+  renderTopbar();
+  const main = document.getElementById("mainArea");
+  main.innerHTML = VIEW_BUILDERS[currentView]();
+
+  if(currentView==="overview") mountOverviewCharts();
+  if(currentView==="iam") renderIamGraph();
+  if(currentView==="riskengine") mountRiskEngineCharts();
+  if(currentView==="terraform") wireTerraformView();
+  if(currentView==="reports") wireReportsView();
+  if(currentView==="copilot") wireCopilotView();
+  if(currentView==="findings"){
+    document.querySelectorAll(".finding-row").forEach(row=>{
+      row.addEventListener("click", ()=> renderFindingDetail(row.dataset.fid));
+    });
+  }
+}
+
+renderAll();
+
+</script>
+</body>
+</html>
